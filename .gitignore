@@ -1,0 +1,45 @@
+# web application files
+/web-app/WEB-INF
+
+# logs
+/stacktrace.log
+/test/reports
+/logs
+caldecott.log
+
+# project release file
+/*.war
+
+# "temporary" build files
+target/
+out/
+
+# idea
+**/.idea/
+*.iws
+*.iml
+*.ipr
+
+#grails temp
+site-common/plugin.xml
+
+#sass
+.sass-cache/
+
+#scss files
+#**/assets/stylesheets/scss/
+
+#npm
+node_modules/
+
+#sync
+sync/
+sync-plugin/
+
+#generated files
+**/build/
+**/assets/javascript/angular-app/
+**/js/angular-app/
+
+#gradle
+.gradle/
