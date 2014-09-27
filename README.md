@@ -11,3 +11,4 @@ abc - открывает заметку
 4. settings 4h
 
 DefaultChooseByNameItemProvider - filterElements
+ChooseByNameBase - rebuildList

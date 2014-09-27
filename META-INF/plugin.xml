@@ -41,6 +41,9 @@
       <action id="HashMemDialog" class="com.hashmem.jetbrains.HashMemDialog" text="HashMemDialog">
           <add-to-group group-id="ToolsMenu" anchor="first"/>
       </action>
+      <action id="HmDialog" class="com.hashmem.idea.HmAction" text="HmDialog">
+          <add-to-group group-id="ToolsMenu" anchor="first"/>
+      </action>
   </actions>
 
 </idea-plugin>
