@@ -5,6 +5,7 @@
 package com.hashmem.idea;
 
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
+import com.intellij.ide.util.gotoByName.GotoFileCellRenderer;
 import com.intellij.ide.util.gotoByName.ModelDiff;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.MnemonicHelper;
@@ -16,8 +17,11 @@ import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.Disposer;
+import com.intellij.openapi.util.SystemInfo;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiManager;
 import com.intellij.psi.util.PsiUtilCore;
 import com.intellij.ui.ScreenUtil;
 import com.intellij.ui.ScrollPaneFactory;
@@ -59,11 +63,15 @@ public class HmPopup {
 
     public HmPopup(Project myProject) {
         this.myProject = myProject;
+        myList.setCellRenderer(new GotoFileCellRenderer(15));
     }
 
     void show() {
 
         myListModel.addToModel(0, "Hello world");
+        for (VirtualFile file : myProject.getBaseDir().getChildren()) {
+            myListModel.addElement(PsiManager.getInstance(myProject).findFile(file));
+        }
 
         myTextFieldPanel.setLayout(new BoxLayout(myTextFieldPanel, BoxLayout.Y_AXIS));
         myTextFieldPanel.add(myTextField);
@@ -74,8 +82,8 @@ public class HmPopup {
         myListScrollPane = ScrollPaneFactory.createScrollPane(myList);
         myListScrollPane.setViewportBorder(new EmptyBorder(0, 0, 0, 0));
 
-
-        Rectangle bounds = new Rectangle();
+        Rectangle bounds = new Rectangle(myTextFieldPanel.getLocationOnScreen(), myTextField.getSize());
+        bounds.y += myTextFieldPanel.getHeight() + (SystemInfo.isMac ? 3 : 1);
 
         final Dimension preferredScrollPaneSize = myListScrollPane.getPreferredSize();
         if (myList.getModel().getSize() == 0) {
@@ -83,7 +91,7 @@ public class HmPopup {
         }
 
 
-        Rectangle preferredBounds = new Rectangle(bounds.x, bounds.y, preferredScrollPaneSize.width, preferredScrollPaneSize.height);
+        Rectangle preferredBounds = new Rectangle(bounds.x, bounds.y, bounds.width, preferredScrollPaneSize.height);
         Rectangle original = new Rectangle(preferredBounds);
 
         ScreenUtil.fitToScreen(preferredBounds);
@@ -114,6 +122,7 @@ public class HmPopup {
             myDropdownPopup.setLocation(preferredBounds.getLocation());
             myDropdownPopup.setSize(preferredBounds.getSize());
             myDropdownPopup.show(layeredPane);
+            myList.updateUI();
         }
     }
 
