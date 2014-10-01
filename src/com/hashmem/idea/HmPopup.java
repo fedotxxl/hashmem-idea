@@ -4,13 +4,15 @@
  */
 package com.hashmem.idea;
 
+import com.hashmem.jetbrains.HashMemItemProvider;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
-import com.intellij.ide.util.gotoByName.GotoFileCellRenderer;
-import com.intellij.ide.util.gotoByName.ModelDiff;
+import com.intellij.ide.actions.GotoActionBase;
+import com.intellij.ide.util.gotoByName.*;
 import com.intellij.openapi.MnemonicHelper;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.keymap.Keymap;
 import com.intellij.openapi.keymap.KeymapManager;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.ComponentPopupBuilder;
 import com.intellij.openapi.ui.popup.JBPopup;
@@ -31,6 +33,7 @@ import com.intellij.ui.components.JBList;
 import com.intellij.ui.popup.PopupOwner;
 import com.intellij.ui.popup.PopupPositionManager;
 import com.intellij.ui.popup.PopupUpdateProcessor;
+import com.intellij.util.Processor;
 import com.intellij.util.text.Matcher;
 import com.intellij.util.text.MatcherHolder;
 import com.intellij.util.ui.GraphicsUtil;
@@ -62,7 +65,7 @@ public class HmPopup {
     protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
     private static int VISIBLE_LIST_SIZE_LIMIT = 10;
     private ListCellRenderer listCellRenderer = new GotoFileCellRenderer(15);
-
+    protected ChooseByNameItemProvider myProvider;
 
     //    protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
     protected final MyTextField myTextField = new MyTextField();
@@ -70,6 +73,7 @@ public class HmPopup {
 
     public HmPopup(Project myProject) {
         this.myProject = myProject;
+        this.myProvider = new HashMemItemProvider(GotoActionBase.getPsiContext(myProject));
         myList.setCellRenderer(listCellRenderer);
     }
 
@@ -287,6 +291,26 @@ public class HmPopup {
         setMatcher(text);
 
         //ChooseByName.rebuildList
+        addElementsByPattern(myPattern, elements, myCancelled, everywhere);
+    }
+
+    public void addElementsByPattern(@NotNull String pattern,
+                                     @NotNull final Set<Object> elements,
+                                     @NotNull final ProgressIndicator cancelled,
+                                     boolean everywhere) {
+        long start = System.currentTimeMillis();
+        myProvider.filterElements(
+                ChooseByNameBase.this, pattern, everywhere,
+                cancelled,
+                new Processor<Object>() {
+                    @Override
+                    public boolean process(Object o) {
+                        if (cancelled.isCanceled()) return false;
+                        elements.add(o);
+                        return true;
+                    }
+                }
+        );
     }
 
     @NotNull
