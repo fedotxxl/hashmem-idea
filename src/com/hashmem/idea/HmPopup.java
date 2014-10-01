@@ -7,16 +7,12 @@ package com.hashmem.idea;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.ide.util.gotoByName.GotoFileCellRenderer;
 import com.intellij.ide.util.gotoByName.ModelDiff;
-import com.intellij.openapi.Disposable;
 import com.intellij.openapi.MnemonicHelper;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.keymap.KeymapManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.popup.ComponentPopupBuilder;
-import com.intellij.openapi.ui.popup.JBPopup;
-import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.ui.popup.*;
 import com.intellij.openapi.util.Computable;
-import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.WindowManager;
@@ -44,6 +40,8 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 
@@ -58,7 +56,6 @@ public class HmPopup {
     protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
     private static int VISIBLE_LIST_SIZE_LIMIT = 10;
     private ListCellRenderer listCellRenderer = new GotoFileCellRenderer(15);
-
 
 
     //    protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
@@ -127,6 +124,7 @@ public class HmPopup {
             myDropdownPopup.setLocation(preferredBounds.getLocation());
             myDropdownPopup.setSize(preferredBounds.getSize());
             myDropdownPopup.show(layeredPane);
+            myList.setFocusable(false);
             myList.setSelectedIndex(5);
             myList.updateUI();
         }
@@ -136,7 +134,7 @@ public class HmPopup {
         String pattern = "bOd";
 
         final Matcher matcher = buildPatternMatcher(isSearchInAnyPlace() ? "*" + pattern : pattern);
-        ((MatcherHolder)listCellRenderer).setPatternMatcher(matcher);
+        ((MatcherHolder) listCellRenderer).setPatternMatcher(matcher);
     }
 
     private boolean isSearchInAnyPlace() {
@@ -158,7 +156,14 @@ public class HmPopup {
                 (10, (paneHeight - (y + preferredTextFieldPanelSize.height)) / (preferredTextFieldPanelSize.height / 2) - 1);
 
         ComponentPopupBuilder builder = JBPopupFactory.getInstance().createComponentPopupBuilder(myTextFieldPanel, myTextField);
-        builder.setFocusable(true).setRequestFocus(true).setModalContext(false).setCancelOnClickOutside(false);
+        builder.setCancelCallback(new Computable<Boolean>() {
+            @Override
+            public Boolean compute() {
+                myTextPopup = null;
+                close(false);
+                return Boolean.TRUE;
+            }
+        }).setFocusable(true).setRequestFocus(true).setModalContext(false).setCancelOnClickOutside(false);
 
         Point point = new Point(x, y);
         SwingUtilities.convertPointToScreen(point, layeredPane);
@@ -167,16 +172,29 @@ public class HmPopup {
         myTextPopup.setSize(bounds.getSize());
         myTextPopup.setLocation(bounds.getLocation());
 
+        myTextPopup.setSize(bounds.getSize());
+        myTextPopup.setLocation(bounds.getLocation());
+
         new MnemonicHelper().register(myTextFieldPanel);
         if (myProject != null && !myProject.isDefault()) {
             DaemonCodeAnalyzer.getInstance(myProject).disableUpdateByTimer(myTextPopup);
         }
 
-        Disposer.register(myTextPopup, new Disposable() {
+        myTextField.addFocusListener(new FocusAdapter() {
             @Override
-            public void dispose() {
+            public void focusLost(@NotNull final FocusEvent e) {
+                Component oppositeComponent = e.getOppositeComponent();
+
+                if (oppositeComponent != null && !(oppositeComponent instanceof JFrame) &&
+                        myList.isShowing() &&
+                        (oppositeComponent == myList || SwingUtilities.isDescendingFrom(myList, oppositeComponent))) {
+                    myTextField.requestFocus();// Otherwise me may skip some KeyEvents
+                } else {
+                    close(false);
+                }
             }
         });
+
         myTextPopup.show(layeredPane);
     }
 
@@ -187,12 +205,10 @@ public class HmPopup {
         Component parent = UIUtil.findUltimateParent(window);
 
         if (parent instanceof JFrame) {
-            layeredPane = ((JFrame)parent).getLayeredPane();
-        }
-        else if (parent instanceof JDialog) {
-            layeredPane = ((JDialog)parent).getLayeredPane();
-        }
-        else {
+            layeredPane = ((JFrame) parent).getLayeredPane();
+        } else if (parent instanceof JDialog) {
+            layeredPane = ((JDialog) parent).getLayeredPane();
+        } else {
             throw new IllegalStateException("cannot find parent window: project=" + myProject +
                     (myProject != null ? "; open=" + myProject.isOpen() : "") +
                     "; window=" + window);
@@ -205,8 +221,7 @@ public class HmPopup {
         public void addToModel(int idx, T element) {
             if (idx < size()) {
                 add(idx, element);
-            }
-            else {
+            } else {
                 addElement(element);
             }
         }
@@ -214,7 +229,7 @@ public class HmPopup {
         @Override
         public void removeRangeFromModel(int start, int end) {
             if (start < size() && size() != 0) {
-                removeRange(start, Math.min(end, size()-1));
+                removeRange(start, Math.min(end, size() - 1));
             }
         }
     }
@@ -262,7 +277,7 @@ public class HmPopup {
             final Shortcut[] shortcuts = KeymapManager.getInstance().getActiveKeymap().getShortcuts(actionCodeCompletion);
             for (final Shortcut shortcut : shortcuts) {
                 if (shortcut instanceof KeyboardShortcut) {
-                    return ((KeyboardShortcut)shortcut).getFirstKeyStroke();
+                    return ((KeyboardShortcut) shortcut).getFirstKeyStroke();
                 }
             }
             return null;
@@ -274,8 +289,7 @@ public class HmPopup {
                 if (myDropdownPopup != null && myDropdownPopup.isVisible()) {
                     sink.put(key, myDropdownPopup);
                 }
-            }
-            else if (LangDataKeys.PARENT_POPUP.equals(key)) {
+            } else if (LangDataKeys.PARENT_POPUP.equals(key)) {
             }
         }
 
@@ -289,7 +303,7 @@ public class HmPopup {
         }
 
         private boolean isComplexPattern(@NotNull final String pattern) {
-           return false;
+            return false;
         }
 
         @Override
@@ -306,6 +320,30 @@ public class HmPopup {
 
         public boolean isCompletionKeyStroke() {
             return completionKeyStrokeHappened;
+        }
+    }
+
+    private void close(boolean ok) {
+        cleanupUI(ok);
+    }
+
+    private void cleanupUI(boolean ok) {
+        if (myTextPopup != null) {
+            if (ok) {
+                myTextPopup.closeOk(null);
+            } else {
+                myTextPopup.cancel();
+            }
+            myTextPopup = null;
+        }
+
+        if (myDropdownPopup != null) {
+            if (ok) {
+                myDropdownPopup.closeOk(null);
+            } else {
+                myDropdownPopup.cancel();
+            }
+            myDropdownPopup = null;
         }
     }
 
@@ -329,22 +367,20 @@ public class HmPopup {
                 }
 
                 if (element instanceof DataProvider) {
-                    return ((DataProvider)element).getData(dataId);
+                    return ((DataProvider) element).getData(dataId);
                 }
-            }
-            else if (LangDataKeys.PSI_ELEMENT_ARRAY.is(dataId)) {
+            } else if (LangDataKeys.PSI_ELEMENT_ARRAY.is(dataId)) {
                 final java.util.List<Object> chosenElements = null;
                 if (chosenElements != null) {
                     java.util.List<PsiElement> result = new ArrayList<PsiElement>(chosenElements.size());
                     for (Object element : chosenElements) {
                         if (element instanceof PsiElement) {
-                            result.add((PsiElement)element);
+                            result.add((PsiElement) element);
                         }
                     }
                     return PsiUtilCore.toPsiElementArray(result);
                 }
-            }
-            else if (PlatformDataKeys.DOMINANT_HINT_AREA_RECTANGLE.is(dataId)) {
+            } else if (PlatformDataKeys.DOMINANT_HINT_AREA_RECTANGLE.is(dataId)) {
                 return getBounds();
             }
             return null;
