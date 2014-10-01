@@ -22,6 +22,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.codeStyle.NameUtil;
 import com.intellij.psi.util.PsiUtilCore;
 import com.intellij.ui.ScreenUtil;
 import com.intellij.ui.ScrollPaneFactory;
@@ -29,6 +30,8 @@ import com.intellij.ui.components.JBList;
 import com.intellij.ui.popup.PopupOwner;
 import com.intellij.ui.popup.PopupPositionManager;
 import com.intellij.ui.popup.PopupUpdateProcessor;
+import com.intellij.util.text.Matcher;
+import com.intellij.util.text.MatcherHolder;
 import com.intellij.util.ui.GraphicsUtil;
 import com.intellij.util.ui.UIUtil;
 import org.jetbrains.annotations.NotNull;
@@ -54,6 +57,7 @@ public class HmPopup {
     protected JBPopup myTextPopup;
     protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
     private static int VISIBLE_LIST_SIZE_LIMIT = 10;
+    private ListCellRenderer listCellRenderer = new GotoFileCellRenderer(15);
 
 
 
@@ -63,10 +67,11 @@ public class HmPopup {
 
     public HmPopup(Project myProject) {
         this.myProject = myProject;
-        myList.setCellRenderer(new GotoFileCellRenderer(15));
+        myList.setCellRenderer(listCellRenderer);
     }
 
     void show() {
+        setMatcher();
 
         myListModel.addToModel(0, "Hello world");
         for (VirtualFile file : myProject.getBaseDir().getChildren()) {
@@ -122,8 +127,24 @@ public class HmPopup {
             myDropdownPopup.setLocation(preferredBounds.getLocation());
             myDropdownPopup.setSize(preferredBounds.getSize());
             myDropdownPopup.show(layeredPane);
+            myList.setSelectedIndex(5);
             myList.updateUI();
         }
+    }
+
+    private void setMatcher() {
+        String pattern = "bOd";
+
+        final Matcher matcher = buildPatternMatcher(isSearchInAnyPlace() ? "*" + pattern : pattern);
+        ((MatcherHolder)listCellRenderer).setPatternMatcher(matcher);
+    }
+
+    private boolean isSearchInAnyPlace() {
+        return true;
+    }
+
+    private static Matcher buildPatternMatcher(@NotNull String pattern) {
+        return NameUtil.buildMatcher(pattern, 0, true, true, pattern.toLowerCase().equals(pattern));
     }
 
     protected void showTextFieldPanel() {
