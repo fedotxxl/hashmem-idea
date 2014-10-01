@@ -9,9 +9,12 @@ import com.intellij.ide.util.gotoByName.GotoFileCellRenderer;
 import com.intellij.ide.util.gotoByName.ModelDiff;
 import com.intellij.openapi.MnemonicHelper;
 import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.keymap.Keymap;
 import com.intellij.openapi.keymap.KeymapManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.popup.*;
+import com.intellij.openapi.ui.popup.ComponentPopupBuilder;
+import com.intellij.openapi.ui.popup.JBPopup;
+import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -20,6 +23,8 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.codeStyle.NameUtil;
 import com.intellij.psi.util.PsiUtilCore;
+import com.intellij.ui.DocumentAdapter;
+import com.intellij.ui.ListScrollingUtil;
 import com.intellij.ui.ScreenUtil;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.components.JBList;
@@ -36,14 +41,15 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 public class HmPopup {
 
@@ -68,7 +74,7 @@ public class HmPopup {
     }
 
     void show() {
-        setMatcher();
+        setMatcher("bOd");
 
         myListModel.addToModel(0, "Hello world");
         for (VirtualFile file : myProject.getBaseDir().getChildren()) {
@@ -130,9 +136,7 @@ public class HmPopup {
         }
     }
 
-    private void setMatcher() {
-        String pattern = "bOd";
-
+    private void setMatcher(String pattern) {
         final Matcher matcher = buildPatternMatcher(isSearchInAnyPlace() ? "*" + pattern : pattern);
         ((MatcherHolder) listCellRenderer).setPatternMatcher(matcher);
     }
@@ -195,7 +199,111 @@ public class HmPopup {
             }
         });
 
+        addKeyListeners();
+
         myTextPopup.show(layeredPane);
+    }
+
+    private void addKeyListeners() {
+        final Set<KeyStroke> upShortcuts = getShortcuts(IdeActions.ACTION_EDITOR_MOVE_CARET_UP);
+        final Set<KeyStroke> downShortcuts = getShortcuts(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN);
+
+        myTextField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(@NotNull KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER && (e.getModifiers() & InputEvent.SHIFT_MASK) != 0) {
+                    close(true);
+                }
+                if (!myListScrollPane.isVisible()) {
+                    return;
+                }
+                final int keyCode;
+
+                // Add support for user-defined 'caret up/down' shortcuts.
+                KeyStroke stroke = KeyStroke.getKeyStrokeForEvent(e);
+                if (upShortcuts.contains(stroke)) {
+                    keyCode = KeyEvent.VK_UP;
+                }
+                else if (downShortcuts.contains(stroke)) {
+                    keyCode = KeyEvent.VK_DOWN;
+                }
+                else {
+                    keyCode = e.getKeyCode();
+                }
+                switch (keyCode) {
+                    case KeyEvent.VK_DOWN:
+                        ListScrollingUtil.moveDown(myList, e.getModifiersEx());
+                        break;
+                    case KeyEvent.VK_UP:
+                        ListScrollingUtil.moveUp(myList, e.getModifiersEx());
+                        break;
+                    case KeyEvent.VK_PAGE_UP:
+                        ListScrollingUtil.movePageUp(myList);
+                        break;
+                    case KeyEvent.VK_PAGE_DOWN:
+                        ListScrollingUtil.movePageDown(myList);
+                        break;
+                    case KeyEvent.VK_TAB:
+                        close(true);
+                        break;
+                    case KeyEvent.VK_ENTER:
+                        //todo
+                        break;
+                }
+//
+//                if (myList.getSelectedValue() == NON_PREFIX_SEPARATOR) {
+//                    if (keyCode == KeyEvent.VK_UP || keyCode == KeyEvent.VK_PAGE_UP) {
+//                        ListScrollingUtil.moveUp(myList, e.getModifiersEx());
+//                    }
+//                    else {
+//                        ListScrollingUtil.moveDown(myList, e.getModifiersEx());
+//                    }
+//                }
+            }
+        });
+
+        myTextField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                close(true);
+            }
+        });
+
+        myTextField.getDocument().addDocumentListener(new DocumentAdapter() {
+            @Override
+            protected void textChanged(DocumentEvent e) {
+                rebuildList(false);
+            }
+        });
+    }
+
+    private void rebuildList(boolean b) {
+        final String text = myTextField.getText();
+
+        if (text == null || text.trim().isEmpty()) {
+            return;
+        }
+
+        setMatcher(text);
+
+        //ChooseByName.rebuildList
+    }
+
+    @NotNull
+    private static Set<KeyStroke> getShortcuts(@NotNull String actionId) {
+        Set<KeyStroke> result = new HashSet<KeyStroke>();
+        Keymap keymap = KeymapManager.getInstance().getActiveKeymap();
+        Shortcut[] shortcuts = keymap.getShortcuts(actionId);
+        if (shortcuts == null) {
+            return result;
+        }
+        for (Shortcut shortcut : shortcuts) {
+            if (shortcut instanceof KeyboardShortcut) {
+                KeyboardShortcut keyboardShortcut = (KeyboardShortcut)shortcut;
+                result.add(keyboardShortcut.getFirstKeyStroke());
+            }
+        }
+        return result;
     }
 
     private JLayeredPane getLayeredPane() {
@@ -295,7 +403,7 @@ public class HmPopup {
 
         @Override
         protected void processKeyEvent(@NotNull KeyEvent e) {
-
+            super.processKeyEvent(e);
         }
 
         private void fillInCommonPrefix(@NotNull final String pattern) {
