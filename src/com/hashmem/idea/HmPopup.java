@@ -8,7 +8,10 @@ import com.google.common.collect.Lists;
 import com.hashmem.jetbrains.HashMemItemProvider;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.ide.actions.GotoActionBase;
-import com.intellij.ide.util.gotoByName.*;
+import com.intellij.ide.util.gotoByName.ChooseByNameItemProvider;
+import com.intellij.ide.util.gotoByName.GotoFileCellRenderer;
+import com.intellij.ide.util.gotoByName.MatchResult;
+import com.intellij.ide.util.gotoByName.ModelDiff;
 import com.intellij.openapi.MnemonicHelper;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.keymap.Keymap;
@@ -64,7 +67,7 @@ public class HmPopup {
     protected final Project myProject;
     protected JBPopup myTextPopup;
     protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
-    private static int VISIBLE_LIST_SIZE_LIMIT = 10;
+    private static int VISIBLE_LIST_SIZE_LIMIT = 5;
     private ListCellRenderer listCellRenderer = new GotoFileCellRenderer(15);
     protected ChooseByNameItemProvider myProvider;
 
@@ -91,9 +94,14 @@ public class HmPopup {
         myTextFieldPanel.setBorder(new EmptyBorder(2, 2, 2, 2));
         showTextFieldPanel();
 
-
         myListScrollPane = ScrollPaneFactory.createScrollPane(myList);
         myListScrollPane.setViewportBorder(new EmptyBorder(0, 0, 0, 0));
+
+        showList();
+    }
+
+    private void showList() {
+        myList.setVisibleRowCount(Math.min(VISIBLE_LIST_SIZE_LIMIT, myList.getModel().getSize()));
 
         Rectangle bounds = new Rectangle(myTextFieldPanel.getLocationOnScreen(), myTextField.getSize());
         bounds.y += myTextFieldPanel.getHeight() + (SystemInfo.isMac ? 3 : 1);
@@ -103,8 +111,9 @@ public class HmPopup {
             preferredScrollPaneSize.height = UIManager.getFont("Label.font").getSize();
         }
 
+        preferredScrollPaneSize.width = Math.max(myTextFieldPanel.getWidth(), preferredScrollPaneSize.width);
 
-        Rectangle preferredBounds = new Rectangle(bounds.x, bounds.y, bounds.width, preferredScrollPaneSize.height);
+        Rectangle preferredBounds = new Rectangle(bounds.x, bounds.y, preferredScrollPaneSize.width, preferredScrollPaneSize.height);
         Rectangle original = new Rectangle(preferredBounds);
 
         ScreenUtil.fitToScreen(preferredBounds);
@@ -113,6 +122,9 @@ public class HmPopup {
             preferredBounds.height += height;
         }
 
+        myListScrollPane.setVisible(true);
+        myListScrollPane.setBorder(null);
+
         if (myDropdownPopup == null) {
             final JLayeredPane layeredPane = myTextField.getRootPane().getLayeredPane();
 
@@ -120,7 +132,7 @@ public class HmPopup {
             builder.setFocusable(false)
                     .setRequestFocus(false)
                     .setCancelKeyEnabled(false)
-//                    .setFocusOwners(new JComponent[]{myTextField})
+                    .setFocusOwners(new JComponent[]{myTextField})
                     .setBelongsToGlobalPopupStack(false)
                     .setModalContext(false)
 //                    .setAdText(adText)
@@ -138,6 +150,9 @@ public class HmPopup {
             myList.setFocusable(false);
             myList.setSelectedIndex(5);
             myList.updateUI();
+        } else {
+            myDropdownPopup.setLocation(preferredBounds.getLocation());
+            myDropdownPopup.setSize(preferredBounds.getSize());
         }
     }
 
@@ -175,8 +190,8 @@ public class HmPopup {
         final int paneHeight = layeredPane.getHeight();
         final int y = paneHeight / 3 - preferredTextFieldPanelSize.height / 2;
 
-        VISIBLE_LIST_SIZE_LIMIT = Math.max
-                (10, (paneHeight - (y + preferredTextFieldPanelSize.height)) / (preferredTextFieldPanelSize.height / 2) - 1);
+//        VISIBLE_LIST_SIZE_LIMIT = Math.max
+//                (10, (paneHeight - (y + preferredTextFieldPanelSize.height)) / (preferredTextFieldPanelSize.height / 2) - 1);
 
         ComponentPopupBuilder builder = JBPopupFactory.getInstance().createComponentPopupBuilder(myTextFieldPanel, myTextField);
         builder.setCancelCallback(new Computable<Boolean>() {
@@ -312,7 +327,7 @@ public class HmPopup {
             myListModel.addElement(o);
         }
 
-        myList.repaint();
+        showList();
 
         //ChooseByName.rebuildList
 //        addElementsByPattern(myPattern, elements, myCancelled, everywhere);
