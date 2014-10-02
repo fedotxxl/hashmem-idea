@@ -2,13 +2,12 @@ apply plugin: "idea"
 apply plugin: "java"
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-    compile 'org.ow2.asm:asm-all:4.1'
     compile 'org.slf4j:slf4j-nop:1.6.3'
-    compile 'org.apache.commons:commons-compress:1.2'
+    compile 'commons-io:commons-io:2.4'
 }
 
 idea.project.ipr {

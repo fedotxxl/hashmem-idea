@@ -2,7 +2,7 @@
  * HmPopup
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
+package com.hashmem.idea.ui;
 
 import com.google.common.collect.Lists;
 import com.hashmem.jetbrains.HashMemItemProvider;

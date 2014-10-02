@@ -2,7 +2,7 @@
  * HmAction
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
+package com.hashmem.idea.ui;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
