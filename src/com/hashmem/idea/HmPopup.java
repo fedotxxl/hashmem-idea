@@ -4,6 +4,7 @@
  */
 package com.hashmem.idea;
 
+import com.google.common.collect.Lists;
 import com.hashmem.jetbrains.HashMemItemProvider;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.ide.actions.GotoActionBase;
@@ -12,7 +13,6 @@ import com.intellij.openapi.MnemonicHelper;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.keymap.Keymap;
 import com.intellij.openapi.keymap.KeymapManager;
-import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.ComponentPopupBuilder;
 import com.intellij.openapi.ui.popup.JBPopup;
@@ -22,7 +22,9 @@ import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
+import com.intellij.psi.codeStyle.MinusculeMatcher;
 import com.intellij.psi.codeStyle.NameUtil;
 import com.intellij.psi.util.PsiUtilCore;
 import com.intellij.ui.DocumentAdapter;
@@ -33,7 +35,6 @@ import com.intellij.ui.components.JBList;
 import com.intellij.ui.popup.PopupOwner;
 import com.intellij.ui.popup.PopupPositionManager;
 import com.intellij.ui.popup.PopupUpdateProcessor;
-import com.intellij.util.Processor;
 import com.intellij.util.text.Matcher;
 import com.intellij.util.text.MatcherHolder;
 import com.intellij.util.ui.GraphicsUtil;
@@ -151,6 +152,20 @@ public class HmPopup {
 
     private static Matcher buildPatternMatcher(@NotNull String pattern) {
         return NameUtil.buildMatcher(pattern, 0, true, true, pattern.toLowerCase().equals(pattern));
+    }
+
+    @NotNull
+    private static MinusculeMatcher buildPatternMatcher(@NotNull String pattern, @NotNull NameUtil.MatchingCaseSensitivity caseSensitivity) {
+        return NameUtil.buildMatcher(pattern, caseSensitivity);
+    }
+
+    @Nullable
+    private static MatchResult matches(@NotNull MinusculeMatcher matcher, @Nullable String name) {
+        if (name == null) {
+            return null;
+        }
+
+        return matcher.matches(name) ? new MatchResult(name, matcher.matchingDegree(name), matcher.isStartMatch(name)) : null;
     }
 
     protected void showTextFieldPanel() {
@@ -289,28 +304,66 @@ public class HmPopup {
         }
 
         setMatcher(text);
+        ArrayList<Object> data = getElementsByPattern(text, myListModel.toArray());
+
+        myListModel.removeAllElements();
+
+        for (Object o : data) {
+            myListModel.addElement(o);
+        }
+
+        myList.repaint();
 
         //ChooseByName.rebuildList
-        addElementsByPattern(myPattern, elements, myCancelled, everywhere);
+//        addElementsByPattern(myPattern, elements, myCancelled, everywhere);
     }
 
-    public void addElementsByPattern(@NotNull String pattern,
-                                     @NotNull final Set<Object> elements,
-                                     @NotNull final ProgressIndicator cancelled,
-                                     boolean everywhere) {
+    public ArrayList<Object> getElementsByPattern(@NotNull String pattern, @NotNull final Object[] elements) {
         long start = System.currentTimeMillis();
-        myProvider.filterElements(
-                ChooseByNameBase.this, pattern, everywhere,
-                cancelled,
-                new Processor<Object>() {
-                    @Override
-                    public boolean process(Object o) {
-                        if (cancelled.isCanceled()) return false;
-                        elements.add(o);
-                        return true;
-                    }
+//        myProvider.filterElements(
+//                ChooseByNameBase.this, pattern, everywhere,
+//                cancelled,
+//                new Processor<Object>() {
+//                    @Override
+//                    public boolean process(Object o) {
+//                        if (cancelled.isCanceled()) return false;
+//                        elements.add(o);
+//                        return true;
+//                    }
+//                }
+//        );
+
+        ArrayList<Object> answer = Lists.newArrayList();
+
+        final MinusculeMatcher matcher = buildPatternMatcher(addSearchAnywherePatternDecorationIfNeeded(pattern), NameUtil.MatchingCaseSensitivity.NONE);
+
+        for (Object o : elements) {
+            if (o != null) {
+                MatchResult result = matches(matcher, getObjectName(o));
+
+                if (result != null) {
+                    answer.add(o);
                 }
-        );
+            }
+        }
+
+        return answer;
+    }
+
+    private String getObjectName(Object o) {
+        if (o instanceof PsiFile) {
+            return ((PsiFile) o).getName();
+        } else {
+            return o.toString();
+        }
+    }
+
+    @NotNull
+    private static String addSearchAnywherePatternDecorationIfNeeded(@NotNull String pattern) {
+        if (!pattern.trim().isEmpty()) {
+            pattern = "*" + pattern;
+        }
+        return pattern;
     }
 
     @NotNull
