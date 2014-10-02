@@ -4,8 +4,10 @@
  */
 package com.hashmem.idea.ui;
 
+import com.hashmem.idea.HashMemApplicationComponent;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 
 public class HmAction extends AnAction {
@@ -15,7 +17,7 @@ public class HmAction extends AnAction {
     }
 
     private void showPopup(Project project, HmModel model, HmCallback callback) {
-        new HmPopup(project).show();
+        new HmPopup(project, ApplicationManager.getApplication().getComponent(HashMemApplicationComponent.class).getNotesService()).show();
 
 //        ListPopupStep step = new BaseListPopupStep<String>("asd", new String[] { "a", "b"});
 //

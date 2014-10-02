@@ -11,16 +11,18 @@ import org.jetbrains.annotations.NotNull;
 public class HashMemApplicationComponent implements ApplicationComponent {
 
     private SyncService syncService;
+    private NotesService notesService;
 
     public HashMemApplicationComponent() {
     }
 
     public void initComponent() {
+        syncService = new SyncService();
+        notesService = new NotesService();
+
         AuthService authService = new AuthService();
         HttpService httpService = new HttpService();
-        syncService = new SyncService();
         NotificationService notificationService = new NotificationService();
-        NotesService notesService = new NotesService();
         Router router = new Router();
         SettingsService settingsService = new SettingsService();
 
@@ -46,6 +48,10 @@ public class HashMemApplicationComponent implements ApplicationComponent {
 
     public SyncService getSyncService() {
         return syncService;
+    }
+
+    public NotesService getNotesService() {
+        return notesService;
     }
 
     @NotNull

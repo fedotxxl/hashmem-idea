@@ -5,6 +5,8 @@
 package com.hashmem.idea.ui;
 
 import com.google.common.collect.Lists;
+import com.hashmem.idea.Note;
+import com.hashmem.idea.NotesService;
 import com.hashmem.jetbrains.HashMemItemProvider;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.ide.actions.GotoActionBase;
@@ -22,11 +24,9 @@ import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.SystemInfo;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
-import com.intellij.psi.PsiManager;
 import com.intellij.psi.codeStyle.MinusculeMatcher;
 import com.intellij.psi.codeStyle.NameUtil;
 import com.intellij.psi.util.PsiUtilCore;
@@ -70,24 +70,26 @@ public class HmPopup {
     private static int VISIBLE_LIST_SIZE_LIMIT = 5;
     private ListCellRenderer listCellRenderer = new GotoFileCellRenderer(15);
     protected ChooseByNameItemProvider myProvider;
+    private NotesService notesService;
 
     //    protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
     protected final MyTextField myTextField = new MyTextField();
 
 
-    public HmPopup(Project myProject) {
+    public HmPopup(Project myProject, NotesService notesService) {
         this.myProject = myProject;
         this.myProvider = new HashMemItemProvider(GotoActionBase.getPsiContext(myProject));
+        this.notesService = notesService;
         myList.setCellRenderer(listCellRenderer);
     }
 
     void show() {
-        setMatcher("bOd");
-
-        myListModel.addToModel(0, "Hello world");
-        for (VirtualFile file : myProject.getBaseDir().getChildren()) {
-            myListModel.addElement(PsiManager.getInstance(myProject).findFile(file));
-        }
+//        setMatcher("bOd");
+//
+//        myListModel.addToModel(0, "Hello world");
+//        for (VirtualFile file : myProject.getBaseDir().getChildren()) {
+//            myListModel.addElement(PsiManager.getInstance(myProject).findFile(file));
+//        }
 
         myTextFieldPanel.setLayout(new BoxLayout(myTextFieldPanel, BoxLayout.Y_AXIS));
         myTextFieldPanel.add(myTextField);
@@ -319,7 +321,7 @@ public class HmPopup {
         }
 
         setMatcher(text);
-        ArrayList<Object> data = getElementsByPattern(text, myListModel.toArray());
+        ArrayList<Object> data = getElementsByPattern(text, getAllItems());
 
         myListModel.removeAllElements();
 
@@ -331,6 +333,17 @@ public class HmPopup {
 
         //ChooseByName.rebuildList
 //        addElementsByPattern(myPattern, elements, myCancelled, everywhere);
+    }
+
+    private Object[] getAllItems() {
+        java.util.List<HmNote> hmNotes = new ArrayList<HmNote>();
+        java.util.List<Note> notes = notesService.getNotes();
+
+        for (Note note : notes) {
+            hmNotes.add(new HmNote(note));
+        }
+
+        return hmNotes.toArray();
     }
 
     public ArrayList<Object> getElementsByPattern(@NotNull String pattern, @NotNull final Object[] elements) {
@@ -368,7 +381,9 @@ public class HmPopup {
     private String getObjectName(Object o) {
         if (o instanceof PsiFile) {
             return ((PsiFile) o).getName();
-        } else {
+        } else if (o instanceof Note) {
+            return ((HmNote) o).getName();
+        }  else {
             return o.toString();
         }
     }

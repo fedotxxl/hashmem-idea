@@ -17,7 +17,7 @@ public class NotesService {
         notes.put(note.getKey(), note);
     }
 
-    List<Note> getNotes() {
+    public List<Note> getNotes() {
         return new ArrayList<Note>(notes.values());
     }
 
