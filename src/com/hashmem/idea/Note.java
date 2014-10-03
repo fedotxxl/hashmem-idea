@@ -11,6 +11,10 @@ public class Note {
     private String key;
     private String content;
 
+    public Note(String key) {
+        this.key = key;
+    }
+
     public boolean isDeleted() {
         return deleted;
     }

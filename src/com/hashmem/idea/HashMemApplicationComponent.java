@@ -20,6 +20,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         syncService = new SyncService();
         notesService = new NotesService();
 
+        FileSystem fileSystem = new FileSystem();
         AuthService authService = new AuthService();
         HttpService httpService = new HttpService();
         NotificationService notificationService = new NotificationService();
@@ -38,6 +39,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         syncService.setNotificationService(notificationService);
 
         router.setSettingsService(settingsService);
+        notesService.setFileSystem(fileSystem);
 
         syncService.postConstruct();
     }

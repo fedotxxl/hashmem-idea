@@ -4,21 +4,31 @@
  */
 package com.hashmem.idea;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import com.intellij.util.Function;
+
 import java.util.List;
-import java.util.Map;
+
+import static com.intellij.util.containers.ContainerUtil.map;
 
 public class NotesService {
 
-    private Map<String, Note> notes = new HashMap<String, Note>();
+    private FileSystem fileSystem;
 
     public void save(Note note) {
-        notes.put(note.getKey(), note);
+        fileSystem.createFile(note.getKey(), note.getContent());
     }
 
     public List<Note> getNotes() {
-        return new ArrayList<Note>(notes.values());
+        return map(fileSystem.listFiles(), new Function<String, Note>() {
+            @Override
+            public Note fun(String it) {
+                return new Note(it);
+            }
+        });
     }
 
+    //=========== SETTERS ============
+    public void setFileSystem(FileSystem fileSystem) {
+        this.fileSystem = fileSystem;
+    }
 }
