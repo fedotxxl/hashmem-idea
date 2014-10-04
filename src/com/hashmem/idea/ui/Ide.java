@@ -5,7 +5,6 @@
 package com.hashmem.idea.ui;
 
 import com.hashmem.idea.FileSystem;
-import com.hashmem.idea.Note;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -13,14 +12,23 @@ import com.intellij.openapi.vfs.VirtualFile;
 public class Ide {
 
     private FileSystem fileSystem;
+    private HmLog log = new HmLog();
 
-    public void openNote(Note note, Project project) {
-        VirtualFile file = fileSystem.virtualFileBy(note.getKey());
+    public void openNote(String key, Project project) {
+        VirtualFile file = fileSystem.virtualFileBy(key);
         if (file != null) {
             new OpenFileDescriptor(project, file).navigate(true);
         } else {
-
+            log.noteNoteFound(key);
         }
+    }
+
+    public void open(VirtualFile file, Project project) {
+        new OpenFileDescriptor(project, file).navigate(true);
+    }
+
+    public HmLog getLog() {
+        return log;
     }
 
     //=========== SETTERS ============

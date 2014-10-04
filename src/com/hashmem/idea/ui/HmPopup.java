@@ -5,6 +5,7 @@
 package com.hashmem.idea.ui;
 
 import com.google.common.collect.Lists;
+import com.hashmem.idea.ActionProcessor;
 import com.hashmem.idea.Note;
 import com.hashmem.idea.NotesService;
 import com.hashmem.jetbrains.HashMemItemProvider;
@@ -61,6 +62,9 @@ import java.util.Set;
 
 public class HmPopup {
 
+    private static int VISIBLE_LIST_SIZE_LIMIT = 5;
+    private static int LIST_SIZE_LIMIT = VISIBLE_LIST_SIZE_LIMIT;
+
     protected JBPopup myDropdownPopup;
     protected JScrollPane myListScrollPane;
     private final MyListModel<HmListItem> myListModel = new MyListModel<HmListItem>();
@@ -68,11 +72,10 @@ public class HmPopup {
     protected final Project myProject;
     protected JBPopup myTextPopup;
     protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
-    private static int VISIBLE_LIST_SIZE_LIMIT = 5;
     private ListCellRenderer listCellRenderer = new GotoFileCellRenderer(15);
     protected ChooseByNameItemProvider myProvider;
     private NotesService notesService;
-    private Ide ide;
+    private ActionProcessor actionProcessor;
     private Query currentQuery;
     private boolean isSkipQueryChangeEvent = false;
 
@@ -80,11 +83,11 @@ public class HmPopup {
     protected final MyTextField myTextField = new MyTextField();
 
 
-    public HmPopup(Project myProject, NotesService notesService, Ide ide) {
+    public HmPopup(Project myProject, NotesService notesService, ActionProcessor actionProcessor) {
         this.myProject = myProject;
         this.myProvider = new HashMemItemProvider(GotoActionBase.getPsiContext(myProject));
         this.notesService = notesService;
-        this.ide = ide;
+        this.actionProcessor = actionProcessor;
         myList.setCellRenderer(listCellRenderer);
     }
 
@@ -158,6 +161,7 @@ public class HmPopup {
             myList.setSelectedIndex(5);
             myList.updateUI();
         } else {
+            myList.setSelectedIndex(0);
             myDropdownPopup.setLocation(preferredBounds.getLocation());
             myDropdownPopup.setSize(preferredBounds.getSize());
         }
@@ -252,14 +256,10 @@ public class HmPopup {
         myTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(@NotNull KeyEvent e) {
-                currentQuery = null;
-
-                if (e.getKeyCode() == KeyEvent.VK_ENTER && (e.getModifiers() & InputEvent.SHIFT_MASK) != 0) {
-                    close(true);
-                }
                 if (!myListScrollPane.isVisible()) {
                     return;
                 }
+
                 final int keyCode;
 
                 // Add support for user-defined 'caret up/down' shortcuts.
@@ -294,7 +294,6 @@ public class HmPopup {
                         close(true);
                         break;
                     case KeyEvent.VK_ENTER:
-                        processAction();
                         break;
                 }
 //
@@ -312,16 +311,22 @@ public class HmPopup {
         myTextField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent actionEvent) {
-                close(true);
+                boolean isSuccess = actionProcessor.processAction(getQuery(), myProject);
+
+                if (isSuccess) {
+                    close(true);
+                }
             }
         });
 
         myTextField.getDocument().addDocumentListener(new DocumentAdapter() {
             @Override
             protected void textChanged(DocumentEvent e) {
+                currentQuery = null;
+
                 if (isSkipQueryChangeEvent) return;
 
-                rebuildList(false);
+                rebuildList(false); //todo add throttling
             }
         });
     }
@@ -330,34 +335,21 @@ public class HmPopup {
         isSkipQueryChangeEvent = true;
 
         HmListItem item = (HmListItem) myList.getSelectedValue();
-        if (item == null) {
-            System.out.println(myList.getSelectedIndex());
-        } else {
-            setQuery(item.toQuery());
-        }
+        if (item != null) setQuery(item.toQuery());
 
         isSkipQueryChangeEvent = false;
-    }
-
-    private void processAction() {
-        HmListItem note = (HmListItem) myList.getSelectedValue();
-        ide.openNote(note.getNote(), myProject);
     }
 
     private void rebuildList(boolean b) {
         Query query = getQuery();
 
-        if (query.isEmpty()) {
-            return;
-        }
-
         setMatcher(query.getKey());
-        ArrayList<HmListItem> data = getElementsByPattern(query.getKey(), getAllItems());
+        ArrayList<HmListItem> data = getElementsByPattern(query.getKey(), getItemsToSuggest(query));
 
         myListModel.removeAllElements();
 
-        for (HmListItem o : data) {
-            myListModel.addElement(o);
+        for (int i = 0; i < Math.min(data.size(), LIST_SIZE_LIMIT); i++) {
+            myListModel.addElement(data.get(i));
         }
 
         showList();
@@ -366,12 +358,19 @@ public class HmPopup {
 //        addElementsByPattern(myPattern, elements, myCancelled, everywhere);
     }
 
-    private Collection<HmListItem> getAllItems() {
+    private Collection<HmListItem> getItemsToSuggest(Query query) {
         java.util.List<HmListItem> items = new ArrayList<HmListItem>();
-        java.util.List<Note> notes = notesService.getNotes();
 
-        for (Note note : notes) {
-            items.add(new HmListItem(getQuery().getPrefix(), note));
+        if (query.isCommandPrefix()) {
+            for (HmCommand command : HmCommand.values()) {
+                items.add(new HmListItem(query.getPrefix(), command));
+            }
+        } else {
+            java.util.List<Note> notes = notesService.getNotes();
+
+            for (Note note : notes) {
+                items.add(new HmListItem(query.getPrefix(), note));
+            }
         }
 
         return items;

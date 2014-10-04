@@ -4,7 +4,9 @@
  */
 package com.hashmem.idea;
 
-public class Note {
+import com.hashmem.idea.ui.Keyable;
+
+public class Note implements Keyable {
 
     private boolean deleted;
     private long lastUpdated;

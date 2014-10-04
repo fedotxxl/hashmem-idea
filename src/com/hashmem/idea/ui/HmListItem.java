@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 public class HmListItem implements NavigationItem {
 
     private Note note;
+    private HmCommand command;
     private String prefix;
 
     public HmListItem(@NotNull String prefix, Note note) {
@@ -21,10 +22,15 @@ public class HmListItem implements NavigationItem {
         this.note = note;
     }
 
+    public HmListItem(String prefix, HmCommand command) {
+        this.prefix = prefix;
+        this.command = command;
+    }
+
     @Nullable
     @Override
     public String getName() {
-        return prefix + note.getKey();
+        return prefix + getTarget().getKey();
     }
 
     @Nullable
@@ -53,11 +59,25 @@ public class HmListItem implements NavigationItem {
         return getName();
     }
 
+    @Nullable
     public Note getNote() {
         return note;
     }
 
+    @Nullable
+    public HmCommand getCommand() {
+        return command;
+    }
+
     public Query toQuery() {
-        return new Query(prefix, note.getKey());
+        return new Query(prefix, getTarget().getKey());
+    }
+
+    private Keyable getTarget() {
+        if (note != null) {
+            return note;
+        } else {
+            return command;
+        }
     }
 }

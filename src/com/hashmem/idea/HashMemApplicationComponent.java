@@ -13,7 +13,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
 
     private SyncService syncService;
     private NotesService notesService;
-    private Ide ide;
+    private ActionProcessor actionProcessor;
 
     public HashMemApplicationComponent() {
     }
@@ -21,8 +21,9 @@ public class HashMemApplicationComponent implements ApplicationComponent {
     public void initComponent() {
         syncService = new SyncService();
         notesService = new NotesService();
-        ide = new Ide();
+        actionProcessor = new ActionProcessor();
 
+        Ide ide = new Ide();
         FileSystem fileSystem = new FileSystem();
         AuthService authService = new AuthService();
         HttpService httpService = new HttpService();
@@ -42,9 +43,11 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         syncService.setNotificationService(notificationService);
 
         router.setSettingsService(settingsService);
-
         ide.setFileSystem(fileSystem);
+
         notesService.setFileSystem(fileSystem);
+        actionProcessor.setFileSystem(fileSystem);
+        actionProcessor.setIde(ide);
 
         syncService.postConstruct();
     }
@@ -61,8 +64,8 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         return notesService;
     }
 
-    public Ide getIde() {
-        return ide;
+    public ActionProcessor getActionProcessor() {
+        return actionProcessor;
     }
 
     @NotNull
