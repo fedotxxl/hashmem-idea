@@ -3,6 +3,7 @@ package com.hashmem.idea;
 import com.hashmem.idea.remote.AuthService;
 import com.hashmem.idea.remote.HttpService;
 import com.hashmem.idea.remote.SyncService;
+import com.hashmem.idea.ui.Ide;
 import com.hashmem.idea.ui.NotificationService;
 import com.intellij.openapi.components.ApplicationComponent;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +13,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
 
     private SyncService syncService;
     private NotesService notesService;
+    private Ide ide;
 
     public HashMemApplicationComponent() {
     }
@@ -19,6 +21,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
     public void initComponent() {
         syncService = new SyncService();
         notesService = new NotesService();
+        ide = new Ide();
 
         FileSystem fileSystem = new FileSystem();
         AuthService authService = new AuthService();
@@ -39,6 +42,8 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         syncService.setNotificationService(notificationService);
 
         router.setSettingsService(settingsService);
+
+        ide.setFileSystem(fileSystem);
         notesService.setFileSystem(fileSystem);
 
         syncService.postConstruct();
@@ -54,6 +59,10 @@ public class HashMemApplicationComponent implements ApplicationComponent {
 
     public NotesService getNotesService() {
         return notesService;
+    }
+
+    public Ide getIde() {
+        return ide;
     }
 
     @NotNull

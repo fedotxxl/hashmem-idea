@@ -49,4 +49,8 @@ public class HmNote implements NavigationItem {
     public String toString() {
         return getName();
     }
+
+    public Note getNote() {
+        return note;
+    }
 }

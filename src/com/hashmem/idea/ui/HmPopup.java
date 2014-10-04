@@ -71,15 +71,17 @@ public class HmPopup {
     private ListCellRenderer listCellRenderer = new GotoFileCellRenderer(15);
     protected ChooseByNameItemProvider myProvider;
     private NotesService notesService;
+    private Ide ide;
 
     //    protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
     protected final MyTextField myTextField = new MyTextField();
 
 
-    public HmPopup(Project myProject, NotesService notesService) {
+    public HmPopup(Project myProject, NotesService notesService, Ide ide) {
         this.myProject = myProject;
         this.myProvider = new HashMemItemProvider(GotoActionBase.getPsiContext(myProject));
         this.notesService = notesService;
+        this.ide = ide;
         myList.setCellRenderer(listCellRenderer);
     }
 
@@ -283,7 +285,7 @@ public class HmPopup {
                         close(true);
                         break;
                     case KeyEvent.VK_ENTER:
-                        //todo
+                        processAction();
                         break;
                 }
 //
@@ -311,6 +313,11 @@ public class HmPopup {
                 rebuildList(false);
             }
         });
+    }
+
+    private void processAction() {
+        HmNote note = (HmNote) myList.getSelectedValue();
+        ide.openNote(note.getNote(), myProject);
     }
 
     private void rebuildList(boolean b) {

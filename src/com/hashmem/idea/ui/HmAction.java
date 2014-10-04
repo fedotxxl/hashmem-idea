@@ -17,7 +17,8 @@ public class HmAction extends AnAction {
     }
 
     private void showPopup(Project project, HmModel model, HmCallback callback) {
-        new HmPopup(project, ApplicationManager.getApplication().getComponent(HashMemApplicationComponent.class).getNotesService()).show();
+        HashMemApplicationComponent component = ApplicationManager.getApplication().getComponent(HashMemApplicationComponent.class);
+        new HmPopup(project, component.getNotesService(), component.getIde()).show();
 
 //        ListPopupStep step = new BaseListPopupStep<String>("asd", new String[] { "a", "b"});
 //
