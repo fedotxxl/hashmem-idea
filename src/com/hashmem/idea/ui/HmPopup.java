@@ -55,6 +55,7 @@ import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -62,7 +63,7 @@ public class HmPopup {
 
     protected JBPopup myDropdownPopup;
     protected JScrollPane myListScrollPane;
-    private final MyListModel<Object> myListModel = new MyListModel<Object>();
+    private final MyListModel<HmListItem> myListModel = new MyListModel<HmListItem>();
     protected final JList myList = new JBList(myListModel);
     protected final Project myProject;
     protected JBPopup myTextPopup;
@@ -72,6 +73,8 @@ public class HmPopup {
     protected ChooseByNameItemProvider myProvider;
     private NotesService notesService;
     private Ide ide;
+    private Query currentQuery;
+    private boolean isSkipQueryChangeEvent = false;
 
     //    protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
     protected final MyTextField myTextField = new MyTextField();
@@ -249,6 +252,8 @@ public class HmPopup {
         myTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(@NotNull KeyEvent e) {
+                currentQuery = null;
+
                 if (e.getKeyCode() == KeyEvent.VK_ENTER && (e.getModifiers() & InputEvent.SHIFT_MASK) != 0) {
                     close(true);
                 }
@@ -271,15 +276,19 @@ public class HmPopup {
                 switch (keyCode) {
                     case KeyEvent.VK_DOWN:
                         ListScrollingUtil.moveDown(myList, e.getModifiersEx());
+                        updateQueryBasedOnSelection();
                         break;
                     case KeyEvent.VK_UP:
                         ListScrollingUtil.moveUp(myList, e.getModifiersEx());
+                        updateQueryBasedOnSelection();
                         break;
                     case KeyEvent.VK_PAGE_UP:
                         ListScrollingUtil.movePageUp(myList);
+                        updateQueryBasedOnSelection();
                         break;
                     case KeyEvent.VK_PAGE_DOWN:
                         ListScrollingUtil.movePageDown(myList);
+                        updateQueryBasedOnSelection();
                         break;
                     case KeyEvent.VK_TAB:
                         close(true);
@@ -310,29 +319,44 @@ public class HmPopup {
         myTextField.getDocument().addDocumentListener(new DocumentAdapter() {
             @Override
             protected void textChanged(DocumentEvent e) {
+                if (isSkipQueryChangeEvent) return;
+
                 rebuildList(false);
             }
         });
     }
 
+    private void updateQueryBasedOnSelection() {
+        isSkipQueryChangeEvent = true;
+
+        HmListItem item = (HmListItem) myList.getSelectedValue();
+        if (item == null) {
+            System.out.println(myList.getSelectedIndex());
+        } else {
+            setQuery(item.toQuery());
+        }
+
+        isSkipQueryChangeEvent = false;
+    }
+
     private void processAction() {
-        HmNote note = (HmNote) myList.getSelectedValue();
+        HmListItem note = (HmListItem) myList.getSelectedValue();
         ide.openNote(note.getNote(), myProject);
     }
 
     private void rebuildList(boolean b) {
-        final String text = myTextField.getText();
+        Query query = getQuery();
 
-        if (text == null || text.trim().isEmpty()) {
+        if (query.isEmpty()) {
             return;
         }
 
-        setMatcher(text);
-        ArrayList<Object> data = getElementsByPattern(text, getAllItems());
+        setMatcher(query.getKey());
+        ArrayList<HmListItem> data = getElementsByPattern(query.getKey(), getAllItems());
 
         myListModel.removeAllElements();
 
-        for (Object o : data) {
+        for (HmListItem o : data) {
             myListModel.addElement(o);
         }
 
@@ -342,18 +366,18 @@ public class HmPopup {
 //        addElementsByPattern(myPattern, elements, myCancelled, everywhere);
     }
 
-    private Object[] getAllItems() {
-        java.util.List<HmNote> hmNotes = new ArrayList<HmNote>();
+    private Collection<HmListItem> getAllItems() {
+        java.util.List<HmListItem> items = new ArrayList<HmListItem>();
         java.util.List<Note> notes = notesService.getNotes();
 
         for (Note note : notes) {
-            hmNotes.add(new HmNote(note));
+            items.add(new HmListItem(getQuery().getPrefix(), note));
         }
 
-        return hmNotes.toArray();
+        return items;
     }
 
-    public ArrayList<Object> getElementsByPattern(@NotNull String pattern, @NotNull final Object[] elements) {
+    public ArrayList<HmListItem> getElementsByPattern(@NotNull String pattern, @NotNull Collection<HmListItem> elements) {
         long start = System.currentTimeMillis();
 //        myProvider.filterElements(
 //                ChooseByNameBase.this, pattern, everywhere,
@@ -368,11 +392,11 @@ public class HmPopup {
 //                }
 //        );
 
-        ArrayList<Object> answer = Lists.newArrayList();
+        ArrayList<HmListItem> answer = Lists.newArrayList();
 
         final MinusculeMatcher matcher = buildPatternMatcher(addSearchAnywherePatternDecorationIfNeeded(pattern), NameUtil.MatchingCaseSensitivity.NONE);
 
-        for (Object o : elements) {
+        for (HmListItem o : elements) {
             if (o != null) {
                 MatchResult result = matches(matcher, getObjectName(o));
 
@@ -389,10 +413,23 @@ public class HmPopup {
         if (o instanceof PsiFile) {
             return ((PsiFile) o).getName();
         } else if (o instanceof Note) {
-            return ((HmNote) o).getName();
+            return ((HmListItem) o).getName();
         }  else {
             return o.toString();
         }
+    }
+
+    private synchronized Query getQuery() {
+        if (currentQuery == null) {
+            currentQuery = new Query(myTextField.getText());
+        }
+
+        return currentQuery;
+    }
+
+    private synchronized void setQuery(Query query) {
+        currentQuery = query;
+        myTextField.setText(query.toString());
     }
 
     @NotNull

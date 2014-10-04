@@ -8,20 +8,23 @@ import com.hashmem.idea.Note;
 import com.hashmem.jetbrains.command.HashMemCommandPresentation;
 import com.intellij.navigation.ItemPresentation;
 import com.intellij.navigation.NavigationItem;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class HmNote implements NavigationItem {
+public class HmListItem implements NavigationItem {
 
     private Note note;
+    private String prefix;
 
-    public HmNote(Note note) {
+    public HmListItem(@NotNull String prefix, Note note) {
+        this.prefix = prefix;
         this.note = note;
     }
 
     @Nullable
     @Override
     public String getName() {
-        return note.getKey();
+        return prefix + note.getKey();
     }
 
     @Nullable
@@ -52,5 +55,9 @@ public class HmNote implements NavigationItem {
 
     public Note getNote() {
         return note;
+    }
+
+    public Query toQuery() {
+        return new Query(prefix, note.getKey());
     }
 }
