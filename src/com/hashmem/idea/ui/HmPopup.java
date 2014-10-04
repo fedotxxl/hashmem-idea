@@ -161,7 +161,6 @@ public class HmPopup {
             myList.setSelectedIndex(5);
             myList.updateUI();
         } else {
-            myList.setSelectedIndex(0);
             myDropdownPopup.setLocation(preferredBounds.getLocation());
             myDropdownPopup.setSize(preferredBounds.getSize());
         }
@@ -275,19 +274,39 @@ public class HmPopup {
                 }
                 switch (keyCode) {
                     case KeyEvent.VK_DOWN:
-                        ListScrollingUtil.moveDown(myList, e.getModifiersEx());
+                        if (isElementSelected()) {
+                            ListScrollingUtil.moveDown(myList, e.getModifiersEx());
+                        } else {
+                            selectFirst();
+                        }
+
                         updateQueryBasedOnSelection();
                         break;
                     case KeyEvent.VK_UP:
-                        ListScrollingUtil.moveUp(myList, e.getModifiersEx());
+                        if (isElementSelected()) {
+                            ListScrollingUtil.moveUp(myList, e.getModifiersEx());
+                        } else {
+                            selectLast();
+                        }
+
                         updateQueryBasedOnSelection();
                         break;
                     case KeyEvent.VK_PAGE_UP:
-                        ListScrollingUtil.movePageUp(myList);
+                        if (isElementSelected()) {
+                            ListScrollingUtil.movePageUp(myList);
+                        } else {
+                            selectFirst();
+                        }
+
                         updateQueryBasedOnSelection();
                         break;
                     case KeyEvent.VK_PAGE_DOWN:
-                        ListScrollingUtil.movePageDown(myList);
+                        if (isElementSelected()) {
+                            ListScrollingUtil.movePageDown(myList);
+                        } else {
+                            selectLast();
+                        }
+
                         updateQueryBasedOnSelection();
                         break;
                     case KeyEvent.VK_TAB:
@@ -329,6 +348,18 @@ public class HmPopup {
                 rebuildList(false); //todo add throttling
             }
         });
+    }
+
+    private boolean isElementSelected() {
+      return myList.getSelectedIndex() >= 0;
+    }
+
+    private void selectFirst() {
+        myList.setSelectedIndex(0);
+    }
+
+    private void selectLast() {
+        myList.setSelectedIndex(Math.max(0, myList.getModel().getSize() - 1));
     }
 
     private void updateQueryBasedOnSelection() {
