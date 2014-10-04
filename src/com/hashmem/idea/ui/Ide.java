@@ -5,13 +5,18 @@
 package com.hashmem.idea.ui;
 
 import com.hashmem.idea.FileSystem;
+import com.hashmem.idea.SettingsService;
+import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 
+import java.net.MalformedURLException;
+
 public class Ide {
 
     private FileSystem fileSystem;
+    private SettingsService settingsService;
     private HmLog log = new HmLog();
 
     public void openNote(String key, Project project) {
@@ -27,6 +32,14 @@ public class Ide {
         new OpenFileDescriptor(project, file).navigate(true);
     }
 
+    public void openBrowser(String page) {
+        try {
+            BrowserUtil.browse(settingsService.getUrl(page));
+        } catch (MalformedURLException e) {
+            log.incorrectPageUrl(e.getMessage());
+        }
+    }
+
     public HmLog getLog() {
         return log;
     }
@@ -34,5 +47,9 @@ public class Ide {
     //=========== SETTERS ============
     public void setFileSystem(FileSystem fileSystem) {
         this.fileSystem = fileSystem;
+    }
+
+    public void setSettingsService(SettingsService settingsService) {
+        this.settingsService = settingsService;
     }
 }

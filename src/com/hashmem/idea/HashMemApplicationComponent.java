@@ -44,6 +44,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
 
         router.setSettingsService(settingsService);
         ide.setFileSystem(fileSystem);
+        ide.setSettingsService(settingsService);
 
         notesService.setFileSystem(fileSystem);
         actionProcessor.setFileSystem(fileSystem);

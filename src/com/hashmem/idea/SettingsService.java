@@ -4,7 +4,12 @@
  */
 package com.hashmem.idea;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 public class SettingsService {
+
+    private static String server = "https://hashMem.com/";
 
     public String getApplicationId() {
         return "idea";
@@ -23,10 +28,14 @@ public class SettingsService {
     }
 
     public String getSyncServer() {
-        return "https://hashMem.com/";
+        return server;
     }
 
     public boolean isSyncEnabled() {
         return true;
+    }
+
+    public URL getUrl(String page) throws MalformedURLException {
+        return new URL(server + page);
     }
 }

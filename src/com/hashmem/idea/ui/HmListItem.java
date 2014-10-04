@@ -4,6 +4,7 @@
  */
 package com.hashmem.idea.ui;
 
+import com.hashmem.idea.Command;
 import com.hashmem.idea.Note;
 import com.hashmem.jetbrains.command.HashMemCommandPresentation;
 import com.intellij.navigation.ItemPresentation;
@@ -14,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 public class HmListItem implements NavigationItem {
 
     private Note note;
-    private HmCommand command;
+    private Command command;
     private String prefix;
 
     public HmListItem(@NotNull String prefix, Note note) {
@@ -22,7 +23,7 @@ public class HmListItem implements NavigationItem {
         this.note = note;
     }
 
-    public HmListItem(String prefix, HmCommand command) {
+    public HmListItem(String prefix, Command command) {
         this.prefix = prefix;
         this.command = command;
     }
@@ -65,7 +66,7 @@ public class HmListItem implements NavigationItem {
     }
 
     @Nullable
-    public HmCommand getCommand() {
+    public Command getCommand() {
         return command;
     }
 

@@ -4,6 +4,7 @@
  */
 package com.hashmem.idea;
 
+import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.ui.Ide;
 import com.hashmem.idea.ui.Query;
 import com.intellij.openapi.project.Project;
@@ -12,6 +13,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 public class ActionProcessor {
 
     private Ide ide;
+    private HmLog log;
     private FileSystem fileSystem;
 
     public boolean processAction(Query query, Project project) {
@@ -54,16 +56,39 @@ public class ActionProcessor {
     }
 
     private boolean delete(String key) {
-        return false;
+        if (fileSystem.scratchFileExists(key)) {
+            if (fileSystem.removeFile(key)) {
+                log.fileDeleted(key);
+                return true;
+            } else {
+                log.canNotDeletedFile(key);
+                return false;
+            }
+        } else {
+            log.noteNoteFound(key, true);
+            return false;
+        }
     }
 
-    private boolean processCommand(String command) {
+    private boolean processCommand(String commandKey) {
+        Command command = Command.myValueOf(commandKey);
+
+        if (command == null) {
+            log.unknownCommand(commandKey);
+        } else if (command == Command.FEEDBACK) {
+            ide.openBrowser("feedback");
+            return true;
+        } else {
+
+        }
+
         return false;
     }
 
     //=========== SETTERS ============
     public void setIde(Ide ide) {
         this.ide = ide;
+        this.log = ide.getLog();
     }
 
     public void setFileSystem(FileSystem fileSystem) {

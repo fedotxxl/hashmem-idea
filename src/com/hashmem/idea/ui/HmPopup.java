@@ -6,6 +6,7 @@ package com.hashmem.idea.ui;
 
 import com.google.common.collect.Lists;
 import com.hashmem.idea.ActionProcessor;
+import com.hashmem.idea.Command;
 import com.hashmem.idea.Note;
 import com.hashmem.idea.NotesService;
 import com.hashmem.jetbrains.HashMemItemProvider;
@@ -393,7 +394,7 @@ public class HmPopup {
         java.util.List<HmListItem> items = new ArrayList<HmListItem>();
 
         if (query.isCommandPrefix()) {
-            for (HmCommand command : HmCommand.values()) {
+            for (Command command : Command.values()) {
                 items.add(new HmListItem(query.getPrefix(), command));
             }
         } else {
