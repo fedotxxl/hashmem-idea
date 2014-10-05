@@ -9,8 +9,6 @@ import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Properties;
 
 public class SettingsService {
@@ -40,10 +38,6 @@ public class SettingsService {
 
     public boolean isSyncEnabled() {
         return !StringUtils.isEmpty(username);
-    }
-
-    public URL getUrl(String page) throws MalformedURLException {
-        return new URL(server + page);
     }
 
     public void refresh(VirtualFile file) {

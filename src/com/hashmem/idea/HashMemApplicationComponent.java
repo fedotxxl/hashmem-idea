@@ -52,7 +52,6 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         fileSystem.setSettingsService(settingsService);
         fileSystem.setSyncService(syncService);
         ide.setFileSystem(fileSystem);
-        ide.setSettingsService(settingsService);
 
         notesService.setFileSystem(fileSystem);
         actionProcessor.setFileSystem(fileSystem);

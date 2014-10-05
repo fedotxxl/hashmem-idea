@@ -21,23 +21,47 @@ public class Router {
     }
 
     public String getAuth() {
-        try {
-            return new URIBuilder(settingsService.getSyncServer() + "/api/v1/auth")
-                    .addParameter("applicationId", settingsService.getApplicationId())
-                    .addParameter("username", settingsService.getUsername())
-                    .addParameter("password", settingsService.getPassword()).toString();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            return null;
-        }
+        return getUrl("api/v1/auth", new UrlConstructor() {
+            @Override
+            public void construct(URIBuilder builder) {
+                builder
+                        .addParameter("applicationId", settingsService.getApplicationId())
+                        .addParameter("username", settingsService.getUsername())
+                        .addParameter("password", settingsService.getPassword());
+            }
+        }).toString();
     }
 
-    public URL getOpenNote(String key) {
+    public URL getOpenNote(final String key) {
+        return getUrl("auth/login_token", new UrlConstructor() {
+            @Override
+            public void construct(URIBuilder builder) {
+                builder
+                        .addParameter("mail", settingsService.getUsername())
+                        .addParameter("token", authService.getTokenOrEmpty())
+                        .addParameter("note", key);
+            }
+        });
+    }
+
+    public URL getHelp() {
+        return getUrl("docs/plugin/jetbrains");
+    }
+
+    public URL getFeedback() {
+        return getUrl("feedback");
+    }
+
+    private URL getUrl(String page) {
+        return getUrl(page, null);
+    }
+
+    private URL getUrl(String page, UrlConstructor urlConstructor) {
         try {
-            return new URIBuilder(settingsService.getSyncServer() + "/auth/login_token")
-                    .addParameter("mail", settingsService.getUsername())
-                    .addParameter("token", authService.getTokenOrEmpty())
-                    .addParameter("note", key).build().toURL();
+            URIBuilder builder = new URIBuilder(settingsService.getSyncServer() + page);
+            if (urlConstructor != null) urlConstructor.construct(builder);
+
+            return builder.build().toURL();
         } catch (URISyntaxException e) {
             e.printStackTrace();
             return null;
@@ -46,6 +70,11 @@ public class Router {
             return null;
         }
     }
+
+    private static interface UrlConstructor {
+        void construct(URIBuilder builder);
+    }
+
 
     //=========== SETTERS ============
     public void setSettingsService(SettingsService settingsService) {

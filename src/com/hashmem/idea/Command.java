@@ -8,7 +8,7 @@ import com.hashmem.idea.ui.Keyable;
 
 public enum Command implements Keyable {
 
-    FEEDBACK("feedback"), SETTINGS("settings"), SYNC("sync");
+    FEEDBACK("feedback"), SETTINGS("settings"), SYNC("sync"), HELP("help");
 
     private String key;
 

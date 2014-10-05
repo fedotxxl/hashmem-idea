@@ -86,13 +86,16 @@ public class ActionProcessor {
         if (command == null) {
             log.unknownCommand(commandKey);
         } else if (command == Command.FEEDBACK) {
-            ide.openBrowser("feedback");
+            ide.openBrowser(router.getFeedback());
             return true;
         } else if (command == Command.SETTINGS) {
             ide.open(fileSystem.getSettingsFile(), project);
             return true;
         } else if (command == Command.SYNC) {
             syncService.syncAll();
+            return true;
+        } else if (command == Command.HELP) {
+            ide.openBrowser(router.getHelp());
             return true;
         }
 
