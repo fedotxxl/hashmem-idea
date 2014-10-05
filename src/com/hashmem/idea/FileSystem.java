@@ -22,21 +22,24 @@ import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.Condition;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
+import com.intellij.openapi.vfs.newvfs.BulkFileListener;
+import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent;
+import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
 import com.intellij.util.Function;
 import com.intellij.util.containers.ContainerUtil;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static com.intellij.util.containers.ContainerUtil.findAll;
 import static com.intellij.util.containers.ContainerUtil.map;
 
 
-public class FileSystem {
+public class FileSystem implements BulkFileListener {
 	private static final Logger LOG = Logger.getInstance(FileSystem.class);
 
 	/**
@@ -52,19 +55,14 @@ public class FileSystem {
 		}
 	};
 	private final String scratchesFolderPath;
+	private final String removedFolderPath;
 
 
     public FileSystem() {
-        this(null);
+        scratchesFolderPath = PathManager.getPluginsPath() + "/hm/";
+        removedFolderPath = PathManager.getPluginsPath() + "/hm.removed/";
     }
 
-	public FileSystem(String scratchesFolderPath) {
-		if (scratchesFolderPath == null || scratchesFolderPath.isEmpty()) {
-			this.scratchesFolderPath = PathManager.getPluginsPath() + "/hm/";
-		} else {
-			this.scratchesFolderPath = scratchesFolderPath + "/"; // add trailing "/" in case it's not specified in config
-		}
-	}
 
 	public List<String> listFiles() {
 		VirtualFile virtualFile = virtualFileBy(HASHMEM_FOLDER);
@@ -104,13 +102,17 @@ public class FileSystem {
 		return createFile(fileName, "");
 	}
 
-	public boolean createFile(final String fileName, final String text) {
+    public boolean createFile(final String fileName, final String text) {
+        return createFile(fileName, text, scratchesFolderPath);
+    }
+
+    private boolean createFile(final String fileName, final String text, final String path) {
 		return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
 			@Override public Boolean compute() {
 				try {
-					ensureExists(new File(scratchesFolderPath));
+					ensureExists(new File(path));
 
-					VirtualFile scratchesFolder = virtualFileBy(HASHMEM_FOLDER);
+					VirtualFile scratchesFolder = virtualFileBy(path, true);
 					if (scratchesFolder == null) return false;
 
 					VirtualFile scratchFile = scratchesFolder.createChildData(FileSystem.this, fileName);
@@ -132,6 +134,7 @@ public class FileSystem {
 				if (virtualFile == null) return false;
 
 				try {
+                    markAsDeleted(virtualFile);
 					virtualFile.delete(FileSystem.this);
 					return true;
 				} catch (IOException e) {
@@ -142,11 +145,15 @@ public class FileSystem {
 		});
 	}
 
-	@Nullable public VirtualFile virtualFileBy(String fileName) {
-		return fileManager.refreshAndFindFileByUrl("file://" + scratchesFolderPath + fileName);
+    @Nullable public VirtualFile virtualFileBy(String fileName) {
+        return virtualFileBy(fileName, false);
+    }
+
+	@Nullable private VirtualFile virtualFileBy(String fileName, boolean isAbsolute) {
+		return fileManager.refreshAndFindFileByUrl("file://" + ((isAbsolute) ? fileName : (scratchesFolderPath + fileName)));
 	}
 
-	public boolean isScratch(final VirtualFile virtualFile) {
+	public boolean isHashMemNote(final VirtualFile virtualFile) {
 		VirtualFile scratchFolder = virtualFileBy(HASHMEM_FOLDER);
 		return scratchFolder != null && ContainerUtil.exists(scratchFolder.getChildren(), new Condition<VirtualFile>() {
 			@Override public boolean value(VirtualFile it) {
@@ -154,6 +161,25 @@ public class FileSystem {
 			}
 		});
 	}
+
+    public Collection<VirtualFile> getDeletedNotesSince(Long since) {
+        Collection<VirtualFile> answer = new HashSet<VirtualFile>();
+        VirtualFile deletedFolder = virtualFileBy(removedFolderPath, true);
+
+        if (deletedFolder != null) {
+            for (VirtualFile file : deletedFolder.getChildren()) {
+                if (!file.isDirectory()) {
+                    if (file.getModificationStamp() > since) answer.add(file);
+                }
+            }
+        }
+
+        return answer;
+    }
+
+    private void markAsDeleted(VirtualFile file) {
+        createFile(file.getName(), "", removedFolderPath);
+    }
 
 	private static boolean isHidden(String fileName) {
 		return fileName.startsWith(".");
@@ -164,4 +190,19 @@ public class FileSystem {
 			throw new IOException(CommonBundle.message("exception.directory.can.not.create", dir.getPath()));
 		}
 	}
+
+    @Override
+    public void before(@NotNull List<? extends VFileEvent> events) {
+        for (VFileEvent e : events) {
+            if (e instanceof VFileDeleteEvent) {
+                VFileDeleteEvent event = (VFileDeleteEvent) e;
+                if (isHashMemNote(e.getFile())) {
+                    markAsDeleted(e.getFile());
+                }
+            }
+        }
+    }
+
+    @Override
+    public void after(@NotNull List<? extends VFileEvent> events) {}
 }

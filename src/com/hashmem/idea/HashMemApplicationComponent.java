@@ -5,7 +5,10 @@ import com.hashmem.idea.remote.HttpService;
 import com.hashmem.idea.remote.SyncService;
 import com.hashmem.idea.ui.Ide;
 import com.hashmem.idea.ui.NotificationService;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.ApplicationComponent;
+import com.intellij.openapi.vfs.VirtualFileManager;
+import com.intellij.util.messages.MessageBusConnection;
 import org.jetbrains.annotations.NotNull;
 
 
@@ -14,8 +17,10 @@ public class HashMemApplicationComponent implements ApplicationComponent {
     private SyncService syncService;
     private NotesService notesService;
     private ActionProcessor actionProcessor;
+    private MessageBusConnection connection;
 
     public HashMemApplicationComponent() {
+        connection = ApplicationManager.getApplication().getMessageBus().connect();
     }
 
     public void initComponent() {
@@ -50,11 +55,12 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         actionProcessor.setFileSystem(fileSystem);
         actionProcessor.setIde(ide);
 
+        connection.subscribe(VirtualFileManager.VFS_CHANGES, fileSystem);
         syncService.postConstruct();
     }
 
     public void disposeComponent() {
-        // TODO: insert component disposal logic here
+        connection.disconnect();
     }
 
     public SyncService getSyncService() {
