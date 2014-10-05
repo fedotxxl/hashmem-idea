@@ -39,6 +39,14 @@ public class AuthService {
         return token;
     }
 
+    public synchronized String getTokenOrEmpty() {
+        try {
+            return getToken();
+        } catch (NotAuthenticatedException e) {
+            return "";
+        }
+    }
+
     public synchronized String refreshToken() throws NotAuthenticatedException {
         token = null;
         return getToken();

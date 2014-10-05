@@ -12,6 +12,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 
 import java.net.MalformedURLException;
+import java.net.URL;
 
 public class Ide {
 
@@ -34,10 +35,14 @@ public class Ide {
 
     public void openBrowser(String page) {
         try {
-            BrowserUtil.browse(settingsService.getUrl(page));
+            openBrowser(settingsService.getUrl(page));
         } catch (MalformedURLException e) {
             log.incorrectPageUrl(e.getMessage());
         }
+    }
+
+    public void openBrowser(URL url) {
+        BrowserUtil.browse(url);
     }
 
     public HmLog getLog() {

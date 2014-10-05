@@ -17,6 +17,7 @@ public class ActionProcessor {
     private HmLog log;
     private FileSystem fileSystem;
     private SyncService syncService;
+    private Router router;
 
     public boolean processAction(Query query, Project project) {
         Query.Type type = query.getType();
@@ -28,6 +29,8 @@ public class ActionProcessor {
             return create(key, project);
         } else if (type == Query.Type.DELETE) {
             return delete(key);
+        } else if (type == Query.Type.OPEN_SITE) {
+            return openSite(key);
         } else if (type == Query.Type.COMMAND) {
             return processCommand(key, project);
         }
@@ -44,6 +47,11 @@ public class ActionProcessor {
             ide.getLog().noteNoteFound(key);
             return false;
         }
+    }
+
+    private boolean openSite(String key) {
+        ide.openBrowser(router.getOpenNote(key));
+        return true;
     }
 
     private boolean create(String key, Project project) {
@@ -103,5 +111,9 @@ public class ActionProcessor {
 
     public void setSyncService(SyncService syncService) {
         this.syncService = syncService;
+    }
+
+    public void setRouter(Router router) {
+        this.router = router;
     }
 }

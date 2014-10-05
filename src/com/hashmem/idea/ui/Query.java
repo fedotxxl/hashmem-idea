@@ -66,7 +66,7 @@ public class Query {
     }
 
     public static enum Type {
-        OPEN, DELETE('-'), CREATE('+'), COMMAND(':');
+        OPEN, OPEN_SITE('/'), DELETE('-'), CREATE('+'), COMMAND(':');
 
         private char prefix;
 
