@@ -12,3 +12,14 @@ abc - открывает заметку
 
 DefaultChooseByNameItemProvider - filterElements
 ChooseByNameBase - rebuildList
+
+--------------------------
+TODO
+
+*Delete / rename
+*Settings
+*Sync fix
+*Open on site
+*Commands
+*Highlight
+*Open unknown type
