@@ -49,16 +49,17 @@ public class HashMemApplicationComponent implements ApplicationComponent {
 
         router.setSettingsService(settingsService);
         fileSystem.setSettingsService(settingsService);
+        fileSystem.setSyncService(syncService);
         ide.setFileSystem(fileSystem);
         ide.setSettingsService(settingsService);
 
         notesService.setFileSystem(fileSystem);
         actionProcessor.setFileSystem(fileSystem);
         actionProcessor.setIde(ide);
+        actionProcessor.setSyncService(syncService);
 
         connection.subscribe(VirtualFileManager.VFS_CHANGES, fileSystem);
         fileSystem.postConstruct();
-        syncService.postConstruct();
     }
 
     public void disposeComponent() {

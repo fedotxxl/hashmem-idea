@@ -14,6 +14,7 @@
 
 package com.hashmem.idea;
 
+import com.hashmem.idea.remote.SyncService;
 import com.intellij.CommonBundle;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.PathManager;
@@ -46,6 +47,7 @@ public class FileSystem implements BulkFileListener, Startable {
 	private static final Logger LOG = Logger.getInstance(FileSystem.class);
 
     private SettingsService settingsService;
+    private SyncService syncService;
 
 	/**
 	 * Use UTF-8 to be compatible with old version of plugin.
@@ -116,24 +118,30 @@ public class FileSystem implements BulkFileListener, Startable {
     }
 
     private boolean createFile(final String fileName, final String text, final String path) {
-		return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
-			@Override public Boolean compute() {
-				try {
-					ensureExists(new File(path));
+        return ApplicationManager.getApplication().runReadAction(new Computable<Boolean>() {
 
-					VirtualFile scratchesFolder = virtualFileBy(path, true);
-					if (scratchesFolder == null) return false;
+            @Override
+            public Boolean compute() {
+                return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
+                    @Override public Boolean compute() {
+                        try {
+                            ensureExists(new File(path));
 
-					VirtualFile scratchFile = scratchesFolder.createChildData(FileSystem.this, fileName);
-					scratchFile.setBinaryContent(text.getBytes(CHARSET));
+                            VirtualFile scratchesFolder = virtualFileBy(path, true);
+                            if (scratchesFolder == null) return false;
 
-					return true;
-				} catch (IOException e) {
-					LOG.warn(e);
-					return false;
-				}
-			}
-		});
+                            VirtualFile scratchFile = scratchesFolder.createChildData(FileSystem.this, fileName);
+                            scratchFile.setBinaryContent(text.getBytes(CHARSET));
+
+                            return true;
+                        } catch (IOException e) {
+                            LOG.warn(e);
+                            return false;
+                        }
+                    }
+                });
+            }
+        });
 	}
 
 	public boolean removeFile(final String fileName) {
@@ -171,19 +179,31 @@ public class FileSystem implements BulkFileListener, Startable {
 		});
 	}
 
-    public Collection<VirtualFile> getDeletedNotesSince(Long since) {
+    public Collection<VirtualFile> getNotesChangesSince(long since) {
+        return getFilesChangedInFolder(scratchesFolderPath, since);
+    }
+
+    public Collection<VirtualFile> getNotesDeletedSince(long since) {
+        return getFilesChangedInFolder(removedFolderPath, since);
+    }
+
+    private Collection<VirtualFile> getFilesChangedInFolder(String path, long since) {
         Collection<VirtualFile> answer = new HashSet<VirtualFile>();
-        VirtualFile deletedFolder = virtualFileBy(removedFolderPath, true);
+        VirtualFile deletedFolder = virtualFileBy(path, true);
 
         if (deletedFolder != null) {
             for (VirtualFile file : deletedFolder.getChildren()) {
                 if (!file.isDirectory()) {
-                    if (file.getModificationStamp() > since) answer.add(file);
+                    if (getLastModified(file) > since && !isHidden(file.getName())) answer.add(file);
                 }
             }
         }
 
         return answer;
+    }
+
+    public static long getLastModified(VirtualFile file) {
+        return new File(file.getCanonicalPath()).lastModified();
     }
 
     private void markAsDeleted(VirtualFile file) {
@@ -207,6 +227,7 @@ public class FileSystem implements BulkFileListener, Startable {
                 VFileDeleteEvent event = (VFileDeleteEvent) e;
                 if (isHashMemNote(e.getFile())) {
                     markAsDeleted(e.getFile());
+                    syncService.syncLater();
                 }
             }
         }
@@ -215,7 +236,12 @@ public class FileSystem implements BulkFileListener, Startable {
     @Override
     public void after(@NotNull List<? extends VFileEvent> events) {
         for (VFileEvent e : events) {
-            if (isSettingsFile(e.getFile())) refreshSettings(e.getFile());
+            VirtualFile file = e.getFile();
+            if (isSettingsFile(file)) {
+                refreshSettings(file);
+            } else if (isHashMemNote(file)) {
+                syncService.syncLater();
+            }
         }
     }
 
@@ -259,5 +285,9 @@ public class FileSystem implements BulkFileListener, Startable {
     //=========== SETTERS ============
     public void setSettingsService(SettingsService settingsService) {
         this.settingsService = settingsService;
+    }
+
+    public void setSyncService(SyncService syncService) {
+        this.syncService = syncService;
     }
 }

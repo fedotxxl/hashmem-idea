@@ -4,8 +4,13 @@
  */
 package com.hashmem.idea;
 
+import com.google.common.collect.Lists;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.Function;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static com.intellij.util.containers.ContainerUtil.map;
@@ -25,6 +30,28 @@ public class NotesService {
                 return new Note(it);
             }
         });
+    }
+
+    public Collection<Note> getNotesChangedSince(long since) {
+        return mapFiles(fileSystem.getNotesChangesSince(since), false);
+    }
+
+    public Collection<Note> getNotesDeletedSince(long since) {
+        return mapFiles(fileSystem.getNotesDeletedSince(since), true);
+    }
+
+    private Collection<Note> mapFiles(Collection<VirtualFile> files, boolean isDeleted) {
+        ArrayList<Note> answer = Lists.newArrayList();
+
+        for (VirtualFile file : files) {
+            try {
+                answer.add(new Note(file, isDeleted));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return answer;
     }
 
     //=========== SETTERS ============

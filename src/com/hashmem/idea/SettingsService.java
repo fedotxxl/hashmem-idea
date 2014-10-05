@@ -17,9 +17,8 @@ public class SettingsService {
 
     private String username;
     private String password;
-    private Integer syncPeriodInSeconds;
 
-    public static final String DEFAULT_CONTENT = "username=\npassword=\nsyncEverySeconds=-1";
+    public static final String DEFAULT_CONTENT = "username=\npassword=";
 
     private static String server = "https://hashMem.com/";
 
@@ -33,10 +32,6 @@ public class SettingsService {
 
     public String getPassword() {
         return password;
-    }
-
-    public Integer getSyncPeriodicityInSeconds() {
-        return syncPeriodInSeconds;
     }
 
     public String getSyncServer() {
@@ -64,7 +59,6 @@ public class SettingsService {
 
             username = prop.getProperty("username");
             password = prop.getProperty("password");
-            syncPeriodInSeconds = Integer.valueOf(prop.getProperty("syncEverySeconds", "-1"));
 
         } catch (IOException ex) {
             ex.printStackTrace();

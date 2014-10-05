@@ -4,6 +4,7 @@
  */
 package com.hashmem.idea;
 
+import com.hashmem.idea.remote.SyncService;
 import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.ui.Ide;
 import com.hashmem.idea.ui.Query;
@@ -15,6 +16,7 @@ public class ActionProcessor {
     private Ide ide;
     private HmLog log;
     private FileSystem fileSystem;
+    private SyncService syncService;
 
     public boolean processAction(Query query, Project project) {
         Query.Type type = query.getType();
@@ -80,6 +82,10 @@ public class ActionProcessor {
             return true;
         } else if (command == Command.SETTINGS) {
             ide.open(fileSystem.getSettingsFile(), project);
+            return true;
+        } else if (command == Command.SYNC) {
+            syncService.syncAll();
+            return true;
         }
 
         return false;
@@ -93,5 +99,9 @@ public class ActionProcessor {
 
     public void setFileSystem(FileSystem fileSystem) {
         this.fileSystem = fileSystem;
+    }
+
+    public void setSyncService(SyncService syncService) {
+        this.syncService = syncService;
     }
 }

@@ -4,12 +4,19 @@
  */
 package com.hashmem.idea.remote;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.hashmem.idea.*;
 import com.hashmem.idea.ui.NotificationService;
+import com.intellij.openapi.application.AccessToken;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -18,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SyncService implements Startable {
+public class SyncService {
 
     private SettingsService settingsService;
     private AuthService authService;
@@ -26,6 +33,7 @@ public class SyncService implements Startable {
     private HttpService httpService;
     private NotesService notesService;
     private Router router;
+    private volatile boolean syncing = false;
 
     private long lastSync = 0l; //todo rememer
 
@@ -33,41 +41,24 @@ public class SyncService implements Startable {
         this.settingsService = settingsService;
     }
 
-    @Override
-    public void postConstruct() {
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(10 * 1000);
-                        Integer periodicity = settingsService.getSyncPeriodicityInSeconds();
-                        boolean isNeverSynced = lastSync == 0l;
-
-                        if (periodicity > 0 && (isNeverSynced || (System.currentTimeMillis() - lastSync)/1000 > periodicity)) {
-                            sync();
-                        }
-                    } catch (InterruptedException e) {
-                        //
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-
-        t.setDaemon(true);
-        t.start();
+    public synchronized void sync() {
+        sync(getLastSync());
     }
 
-    public synchronized void sync() {
-        if (!settingsService.isSyncEnabled()) {
+    public synchronized void syncAll() {
+        sync(0l);
+    }
+
+    private synchronized void sync(long since) {
+        if (syncing || !settingsService.isSyncEnabled()) {
             return;
         }
 
         try {
-            Collection<Note> notes = pushNotes(getLastSync(), getNotesToSync());
+            syncing = true;
+
             long synced = System.currentTimeMillis();
+            Collection<Note> notes = pushNotes(since, getNotesToSync(since));
             saveChangedNotes(notes, synced);
             setLastSync(synced);
         } catch (NotAuthenticatedException nae) {
@@ -78,13 +69,37 @@ public class SyncService implements Startable {
             e.printStackTrace();
 
             notificationService.warn("Unknown hashMem notes sync exception");
+        } finally {
+            syncing = false;
         }
     }
 
+    public void syncLater() {
+        ProgressManager.getInstance().run(new Task.Backgroundable(null, "Syncing hashMem.com notes") {
+            public void run(@NotNull ProgressIndicator progressIndicator) {
+                progressIndicator.setFraction(0.10);
+
+                sync();
+
+                progressIndicator.setFraction(1.0);
+            }
+        });
+    }
+
     private void saveChangedNotes(Collection<Note> notes, long synced) {
-        for (Note note : notes) {
-            note.setLastUpdated(synced);
-            notesService.save(note);
+        if (notes == null || notes.size() == 0) return;
+
+        AccessToken token = null;
+
+        try {
+            token = ApplicationManager.getApplication().acquireWriteActionLock(SyncService.class);
+
+            for (Note note : notes) {
+                note.setLastUpdated(synced);
+                notesService.save(note);
+            }
+        } finally {
+            if (token != null) token.finish();
         }
     }
 
@@ -96,11 +111,16 @@ public class SyncService implements Startable {
         lastSync = sync;
     }
 
-    private Collection<Note> getNotesToSync() {
-        return null;
+    private Collection<Note> getNotesToSync(long since) {
+        Collection<Note> answer = Lists.newArrayList();
+
+        answer.addAll(notesService.getNotesChangedSince(since));
+        answer.addAll(notesService.getNotesDeletedSince(since));
+
+        return answer;
     }
 
-    private Collection<Note> pushNotes(Long lastSync, Collection<Note> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
+    private Collection<Note> pushNotes(long lastSync, Collection<Note> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("synced", lastSync);
         data.put("notes", notesToServer);
