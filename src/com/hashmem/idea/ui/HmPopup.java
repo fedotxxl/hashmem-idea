@@ -13,7 +13,6 @@ import com.hashmem.jetbrains.HashMemItemProvider;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.ide.actions.GotoActionBase;
 import com.intellij.ide.util.gotoByName.ChooseByNameItemProvider;
-import com.intellij.ide.util.gotoByName.GotoFileCellRenderer;
 import com.intellij.ide.util.gotoByName.MatchResult;
 import com.intellij.ide.util.gotoByName.ModelDiff;
 import com.intellij.openapi.MnemonicHelper;
@@ -73,7 +72,7 @@ public class HmPopup {
     protected final Project myProject;
     protected JBPopup myTextPopup;
     protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
-    private ListCellRenderer listCellRenderer = new GotoFileCellRenderer(15);
+    private ListCellRenderer listCellRenderer = new HmListCellRenderer(15);
     protected ChooseByNameItemProvider myProvider;
     private NotesService notesService;
     private ActionProcessor actionProcessor;
