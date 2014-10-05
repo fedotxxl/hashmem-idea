@@ -27,7 +27,7 @@ public class ActionProcessor {
         } else if (type == Query.Type.DELETE) {
             return delete(key);
         } else if (type == Query.Type.COMMAND) {
-            return processCommand(key);
+            return processCommand(key, project);
         }
 
         return false;
@@ -70,7 +70,7 @@ public class ActionProcessor {
         }
     }
 
-    private boolean processCommand(String commandKey) {
+    private boolean processCommand(String commandKey, Project project) {
         Command command = Command.myValueOf(commandKey);
 
         if (command == null) {
@@ -78,8 +78,8 @@ public class ActionProcessor {
         } else if (command == Command.FEEDBACK) {
             ide.openBrowser("feedback");
             return true;
-        } else {
-
+        } else if (command == Command.SETTINGS) {
+            ide.open(fileSystem.getSettingsFile(), project);
         }
 
         return false;

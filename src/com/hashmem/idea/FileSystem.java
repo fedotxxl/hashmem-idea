@@ -33,20 +33,26 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
 import static com.intellij.util.containers.ContainerUtil.findAll;
 import static com.intellij.util.containers.ContainerUtil.map;
 
 
-public class FileSystem implements BulkFileListener {
+public class FileSystem implements BulkFileListener, Startable {
 	private static final Logger LOG = Logger.getInstance(FileSystem.class);
+
+    private SettingsService settingsService;
 
 	/**
 	 * Use UTF-8 to be compatible with old version of plugin.
 	 */
 	private static final Charset CHARSET = Charset.forName("UTF8");
 	private static final String HASHMEM_FOLDER = "";
+	private static final String SETTINGS_FILE = ".settings";
 
 	private final VirtualFileManager fileManager = VirtualFileManager.getInstance();
 	private final Condition<VirtualFile> canBeScratch = new Condition<VirtualFile>() {
@@ -63,9 +69,12 @@ public class FileSystem implements BulkFileListener {
         removedFolderPath = PathManager.getPluginsPath() + "/hm.removed/";
     }
 
+    private VirtualFile getRootFolder() {
+        return virtualFileBy(HASHMEM_FOLDER);
+    }
 
 	public List<String> listFiles() {
-		VirtualFile virtualFile = virtualFileBy(HASHMEM_FOLDER);
+		VirtualFile virtualFile = getRootFolder();
 		if (virtualFile == null || !virtualFile.exists()) {
 			return Collections.emptyList();
 		}
@@ -154,7 +163,7 @@ public class FileSystem implements BulkFileListener {
 	}
 
 	public boolean isHashMemNote(final VirtualFile virtualFile) {
-		VirtualFile scratchFolder = virtualFileBy(HASHMEM_FOLDER);
+		VirtualFile scratchFolder = getRootFolder();
 		return scratchFolder != null && ContainerUtil.exists(scratchFolder.getChildren(), new Condition<VirtualFile>() {
 			@Override public boolean value(VirtualFile it) {
 				return it.equals(virtualFile);
@@ -204,5 +213,51 @@ public class FileSystem implements BulkFileListener {
     }
 
     @Override
-    public void after(@NotNull List<? extends VFileEvent> events) {}
+    public void after(@NotNull List<? extends VFileEvent> events) {
+        for (VFileEvent e : events) {
+            if (isSettingsFile(e.getFile())) refreshSettings(e.getFile());
+        }
+    }
+
+    //settings
+    private void refreshSettings(VirtualFile settings) {
+        if (settings == null) {
+            createDefaultSettingsFile();
+        } else {
+            settingsService.refresh(settings);
+        }
+    }
+
+    public VirtualFile getSettingsFile() {
+        VirtualFile settings = virtualFileBy(SETTINGS_FILE);
+
+        if (settings == null) {
+            createDefaultSettingsFile();
+            settings = virtualFileBy(SETTINGS_FILE);
+        }
+
+        return settings;
+    }
+
+    private void createDefaultSettingsFile() {
+        boolean created = createFile(SETTINGS_FILE, SettingsService.DEFAULT_CONTENT);
+
+        if (!created) {
+            throw new IllegalStateException("Unable to create settings file");
+        }
+    }
+
+    private boolean isSettingsFile(VirtualFile file) {
+        return SETTINGS_FILE.equals(file.getName()) && file.getParent().equals(getRootFolder());
+    }
+
+    @Override
+    public void postConstruct() {
+        refreshSettings(getSettingsFile());
+    }
+
+    //=========== SETTERS ============
+    public void setSettingsService(SettingsService settingsService) {
+        this.settingsService = settingsService;
+    }
 }

@@ -40,9 +40,13 @@ public class SyncService implements Startable {
             public void run() {
                 while (true) {
                     try {
-                        Thread.sleep(settingsService.getSyncPeriodicityInSeconds() * 1000);
+                        Thread.sleep(10 * 1000);
+                        Integer periodicity = settingsService.getSyncPeriodicityInSeconds();
+                        boolean isNeverSynced = lastSync == 0l;
 
-                        sync();
+                        if (periodicity > 0 && (isNeverSynced || (System.currentTimeMillis() - lastSync)/1000 > periodicity)) {
+                            sync();
+                        }
                     } catch (InterruptedException e) {
                         //
                     } catch (Exception e) {
