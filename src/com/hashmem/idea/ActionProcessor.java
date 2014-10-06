@@ -15,6 +15,7 @@ public class ActionProcessor {
 
     private Ide ide;
     private HmLog log;
+    private NotesService notesService;
     private FileSystem fileSystem;
     private SyncService syncService;
     private Router router;
@@ -22,6 +23,10 @@ public class ActionProcessor {
     public boolean processAction(Query query, Project project) {
         Query.Type type = query.getType();
         String key = query.getKey();
+
+        if (!notesService.isValidKey(key)) {
+            return false;
+        }
 
         if (type == Query.Type.OPEN) {
             return open(key, project);
@@ -118,5 +123,9 @@ public class ActionProcessor {
 
     public void setRouter(Router router) {
         this.router = router;
+    }
+
+    public void setNotesService(NotesService notesService) {
+        this.notesService = notesService;
     }
 }

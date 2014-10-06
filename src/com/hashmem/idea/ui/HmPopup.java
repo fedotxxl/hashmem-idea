@@ -31,10 +31,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.codeStyle.MinusculeMatcher;
 import com.intellij.psi.codeStyle.NameUtil;
 import com.intellij.psi.util.PsiUtilCore;
-import com.intellij.ui.DocumentAdapter;
-import com.intellij.ui.ListScrollingUtil;
-import com.intellij.ui.ScreenUtil;
-import com.intellij.ui.ScrollPaneFactory;
+import com.intellij.ui.*;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.popup.PopupOwner;
 import com.intellij.ui.popup.PopupPositionManager;
@@ -43,6 +40,7 @@ import com.intellij.util.text.Matcher;
 import com.intellij.util.text.MatcherHolder;
 import com.intellij.util.ui.GraphicsUtil;
 import com.intellij.util.ui.UIUtil;
+import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -345,7 +343,14 @@ public class HmPopup {
 
                 if (isSkipQueryChangeEvent) return;
 
-                rebuildList(false); //todo add throttling
+                String key = getQuery().getKey();
+
+                if (notesService.isValidKey(key) || StringUtils.isEmpty(key)) {
+                    myTextField.setForeground(JBColor.black);
+                    rebuildList(false); //todo add throttling
+                } else {
+                    myTextField.setForeground(JBColor.red);
+                }
             }
         });
     }
