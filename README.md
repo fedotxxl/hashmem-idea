@@ -23,3 +23,9 @@ TODO
 *Commands
 *Highlight
 *Open unknown type
+
+*Check key
+*Improve sync
+*Open url in browser
+*Logs/Error notification
+*Clear code
