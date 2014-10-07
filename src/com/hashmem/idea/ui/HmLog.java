@@ -4,7 +4,16 @@
  */
 package com.hashmem.idea.ui;
 
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationGroup;
+import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
+
+import javax.swing.*;
+
 public class HmLog {
+
+    private static final String TITLE = "hashMem.com plugin";
 
     public void noteNoteFound(String key) {
         noteNoteFound(key, true);
@@ -39,12 +48,22 @@ public class HmLog {
         warn("Unknown command: '" + key + "'");
     }
 
-
     private void warn(String message) {
-        System.out.println(message);
+        notify(message, NotificationType.WARNING);
     }
     private void info(String message) {
-        System.out.println(message);
+        notify(message, NotificationType.INFORMATION);
+    }
+
+    private static void notify(String message, NotificationType notificationType) {
+        final Notification notification = NotificationGroup.balloonGroup(TITLE).createNotification(message, notificationType);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                Notifications.Bus.notify(notification);
+            }
+        });
+
     }
 
 }
