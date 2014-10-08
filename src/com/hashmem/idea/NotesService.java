@@ -36,6 +36,21 @@ public class NotesService {
         });
     }
 
+    public Note getNote(String key) {
+        VirtualFile file = fileSystem.virtualFileBy(key);
+
+        if (file != null) {
+            try {
+                return new Note(file);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
     public Collection<Note> getNotesChangedSince(long since) {
         return mapFiles(fileSystem.getNotesChangesSince(since), false);
     }

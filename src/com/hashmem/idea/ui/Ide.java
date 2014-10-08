@@ -37,6 +37,10 @@ public class Ide {
         }
     }
 
+    public void openBrowser(String url) {
+        BrowserUtil.browse(url);
+    }
+
     public void openBrowser(URL url) {
         BrowserUtil.browse(url);
     }

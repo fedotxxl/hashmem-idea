@@ -9,7 +9,6 @@ import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.ui.Ide;
 import com.hashmem.idea.ui.Query;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VirtualFile;
 
 public class ActionProcessor {
 
@@ -44,9 +43,18 @@ public class ActionProcessor {
     }
 
     private boolean open(String key, Project project) {
-        VirtualFile file = fileSystem.virtualFileBy(key);
-        if (file != null) {
-            ide.open(file, project);
+        return open(key, project, true);
+    }
+
+    private boolean open(String key, Project project, boolean checkIsLink) {
+        Note note = notesService.getNote(key);
+        if (note != null) {
+            if (checkIsLink && note.isLinkContent()) {
+                ide.openBrowser(note.getContent());
+            } else {
+                ide.open(note.getFile(), project);
+            }
+
             return true;
         } else {
             ide.getLog().noteNoteFound(key);
@@ -67,7 +75,7 @@ public class ActionProcessor {
             }
         }
 
-        return open(key, project);
+        return open(key, project, false);
     }
 
     private boolean delete(String key) {

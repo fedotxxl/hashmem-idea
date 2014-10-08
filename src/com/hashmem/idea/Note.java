@@ -16,16 +16,18 @@ public class Note implements Keyable {
     private long lastUpdated;
     private String key;
     private String content;
+    private VirtualFile file;
 
     public Note(VirtualFile file) throws IOException {
         this(file, false);
     }
 
     public Note(VirtualFile file, boolean deleted) throws IOException {
-        key = file.getName();
-        lastUpdated = FileSystem.getLastModified(file);
-        content = StreamUtil.readText(file.getInputStream(), "UTF-8");
+        this.key = file.getName();
+        this.lastUpdated = FileSystem.getLastModified(file);
+        this.content = StreamUtil.readText(file.getInputStream(), "UTF-8");
         this.deleted = deleted;
+        this.file = file;
     }
 
     public Note(String key) {
@@ -50,6 +52,14 @@ public class Note implements Keyable {
 
     public void setLastUpdated(long lastUpdated) {
         this.lastUpdated = lastUpdated;
+    }
+
+    public boolean isLinkContent() {
+        return Validator.isLink(content);
+    }
+
+    public VirtualFile getFile() {
+        return file;
     }
 
     @Override
