@@ -346,13 +346,21 @@ public class HmPopup {
                 String key = getQuery().getKey();
 
                 if (notesService.isValidKey(key) || StringUtils.isEmpty(key)) {
-                    myTextField.setForeground(JBColor.black);
+                    markAsInvalid();
                     rebuildList(false); //todo add throttling
                 } else {
-                    myTextField.setForeground(JBColor.red);
+                    markAsInvalid();
                 }
             }
         });
+    }
+
+    private void markAsInvalid() {
+        myTextField.setForeground(JBColor.red);
+    }
+
+    private void markAsValid() {
+        myTextField.setForeground(JBColor.black);
     }
 
     private boolean isElementSelected() {
@@ -386,6 +394,13 @@ public class HmPopup {
 
         for (int i = 0; i < Math.min(data.size(), LIST_SIZE_LIMIT); i++) {
             myListModel.addElement(data.get(i));
+        }
+
+        //todo improve algorithm
+        if (query.getType() == Query.Type.OPEN && myListModel.size() == 0) {
+            markAsInvalid();
+        } else {
+            markAsValid();
         }
 
         showList();
