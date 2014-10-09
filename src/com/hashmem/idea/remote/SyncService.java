@@ -7,6 +7,7 @@ package com.hashmem.idea.remote;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.hashmem.NoteToSync;
 import com.hashmem.idea.*;
 import com.hashmem.idea.ui.NotificationService;
 import com.intellij.openapi.application.AccessToken;
@@ -14,6 +15,8 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.util.Function;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.intellij.util.containers.ContainerUtil.map;
+
 public class SyncService {
 
     private SettingsService settingsService;
@@ -32,6 +37,7 @@ public class SyncService {
     private NotificationService notificationService;
     private HttpService httpService;
     private NotesService notesService;
+    private SyncChangeService syncChangeService;
     private Router router;
     private volatile boolean syncing = false;
 
@@ -58,7 +64,7 @@ public class SyncService {
             syncing = true;
 
             long synced = System.currentTimeMillis();
-            Collection<Note> notes = pushNotes(since, getNotesToSync(since));
+            Collection<NoteToSync> notes = pushNotes(since, getNotesToSync(since));
             saveChangedNotes(notes, synced);
             setLastSync(synced);
         } catch (NotAuthenticatedException nae) {
@@ -86,7 +92,23 @@ public class SyncService {
         });
     }
 
-    private void saveChangedNotes(Collection<Note> notes, long synced) {
+    public boolean isSyncing() {
+        return syncing;
+    }
+
+    public void setLastModified(String key, long lastModified) {
+        System.out.println(key + " - " + lastModified);
+    }
+
+    public void setLastModified(VirtualFile file, long lastModified) {
+        setLastModified(notesService.getKey(file), lastModified);
+    }
+
+    public void markAsDeleted(VirtualFile file) {
+        syncChangeService.markAsDeleted(notesService.getKey(file));
+    }
+
+    private void saveChangedNotes(Collection<NoteToSync> notes, long synced) {
         if (notes == null || notes.size() == 0) return;
 
         AccessToken token = null;
@@ -94,8 +116,8 @@ public class SyncService {
         try {
             token = ApplicationManager.getApplication().acquireWriteActionLock(SyncService.class);
 
-            for (Note note : notes) {
-                note.setLastUpdated(synced);
+            for (NoteToSync note : notes) {
+                setLastModified(note.getKey(), synced);
                 notesService.save(note);
             }
         } finally {
@@ -111,29 +133,40 @@ public class SyncService {
         lastSync = sync;
     }
 
-    private Collection<Note> getNotesToSync(long since) {
-        Collection<Note> answer = Lists.newArrayList();
+    private Collection<NoteToSync> getNotesToSync(long since) {
+        Collection<NoteToSync> answer = Lists.newArrayList();
 
-        answer.addAll(notesService.getNotesChangedSince(since));
-        answer.addAll(notesService.getNotesDeletedSince(since));
+        answer.addAll(map(syncChangeService.getUpdatedSince(since), new Function<String, NoteToSync>() {
+            @Override
+            public NoteToSync fun(String key) {
+                return getNoteToSync(key, syncChangeService.getLastUpdated(key), false);
+            }
+        }));
+        answer.addAll(map(syncChangeService.getDeletedSince(since), new Function<String, NoteToSync>() {
+            @Override
+            public NoteToSync fun(String key) {
+                return getNoteToSync(key, syncChangeService.getLastUpdated(key), true);
+            }
+        }));
 
         return answer;
     }
 
-    private Collection<Note> pushNotes(long lastSync, Collection<Note> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
+    private Collection<NoteToSync> pushNotes(long lastSync, Collection<NoteToSync> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
+        long now = System.currentTimeMillis();
         Map<String, Object> data = new HashMap<String, Object>();
+        data.put("now", now);
         data.put("synced", lastSync);
         data.put("notes", notesToServer);
 
         HttpResponse response = doPushNotes(authService.getToken(), data);
         if (response.getStatusLine().getStatusCode() == 401) response = doPushNotes(authService.refreshToken(), data);
 
-
         Integer status = response.getStatusLine().getStatusCode();
 
         if (status == 200) {
-            Type collectionType = new TypeToken<List<Note>>(){}.getType();
-            List<Note> notesFromServer = new Gson().fromJson(IOUtils.toString(response.getEntity().getContent(), "UTF-8"), collectionType);
+            Type collectionType = new TypeToken<List<NoteToSync>>(){}.getType();
+            List<NoteToSync> notesFromServer = new Gson().fromJson(IOUtils.toString(response.getEntity().getContent(), "UTF-8"), collectionType);
             return notesFromServer;
         } else if (status == 401) {
             throw new NotAuthenticatedException();
@@ -144,6 +177,23 @@ public class SyncService {
 
     private HttpResponse doPushNotes(String token, Map data) throws IOException {
         return httpService.post(router.getSync(token), new Gson().toJson(data));
+    }
+
+    private NoteToSync getNoteToSync(String key, long lastUpdated, boolean isDeleted) {
+        NoteToSync answer = null;
+
+        if (isDeleted) {
+            return NoteToSync.newDeletedNote(key, lastUpdated);
+        } else {
+            Note note = notesService.getNote(key);
+            if (note == null) {
+                //todo
+            } else {
+                answer = new NoteToSync(note, lastUpdated);
+            }
+        }
+
+        return answer;
     }
 
     private static class UnknownSyncException extends Exception {
@@ -188,5 +238,9 @@ public class SyncService {
 
     public void setRouter(Router router) {
         this.router = router;
+    }
+
+    public void setSyncChangeService(SyncChangeService syncChangeService) {
+        this.syncChangeService = syncChangeService;
     }
 }

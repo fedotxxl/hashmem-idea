@@ -18,7 +18,7 @@ public class SettingsService {
 
     public static final String DEFAULT_CONTENT = "username=\npassword=";
 
-    private static String server = "https://hashMem.com/";
+    private static String server = "http://localhost:8080/";
 
     public String getApplicationId() {
         return "idea";

@@ -5,6 +5,7 @@
 package com.hashmem.idea;
 
 import com.google.common.collect.Lists;
+import com.hashmem.NoteToSync;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.Function;
 import org.apache.commons.lang.StringUtils;
@@ -23,7 +24,7 @@ public class NotesService {
 
     private FileSystem fileSystem;
 
-    public void save(Note note) {
+    public void save(NoteToSync note) {
         fileSystem.createFile(note.getKey(), note.getContent());
     }
 
@@ -49,6 +50,10 @@ public class NotesService {
         } else {
             return null;
         }
+    }
+
+    public String getKey(VirtualFile file) {
+        return file.getName();
     }
 
     public Collection<Note> getNotesChangedSince(long since) {

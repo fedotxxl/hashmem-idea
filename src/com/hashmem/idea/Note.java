@@ -13,7 +13,6 @@ import java.io.IOException;
 public class Note implements Keyable {
 
     private boolean deleted;
-    private long lastUpdated;
     private String key;
     private String content;
     private VirtualFile file;
@@ -24,7 +23,6 @@ public class Note implements Keyable {
 
     public Note(VirtualFile file, boolean deleted) throws IOException {
         this.key = file.getName();
-        this.lastUpdated = FileSystem.getLastModified(file);
         this.content = StreamUtil.readText(file.getInputStream(), "UTF-8");
         this.deleted = deleted;
         this.file = file;
@@ -38,20 +36,12 @@ public class Note implements Keyable {
         return deleted;
     }
 
-    public long getLastUpdated() {
-        return lastUpdated;
-    }
-
     public String getKey() {
         return key;
     }
 
     public String getContent() {
         return content;
-    }
-
-    public void setLastUpdated(long lastUpdated) {
-        this.lastUpdated = lastUpdated;
     }
 
     public boolean isLinkContent() {
@@ -66,7 +56,6 @@ public class Note implements Keyable {
     public String toString() {
         return "Note{" +
                 "deleted=" + deleted +
-                ", lastUpdated=" + lastUpdated +
                 ", key='" + key + '\'' +
                 ", content='" + content + '\'' +
                 '}';

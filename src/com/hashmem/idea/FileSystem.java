@@ -24,8 +24,7 @@ import com.intellij.openapi.util.Condition;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.vfs.newvfs.BulkFileListener;
-import com.intellij.openapi.vfs.newvfs.events.VFileDeleteEvent;
-import com.intellij.openapi.vfs.newvfs.events.VFileEvent;
+import com.intellij.openapi.vfs.newvfs.events.*;
 import com.intellij.util.Function;
 import com.intellij.util.containers.ContainerUtil;
 import org.jetbrains.annotations.NotNull;
@@ -55,6 +54,8 @@ public class FileSystem implements BulkFileListener, Startable {
 	private static final Charset CHARSET = Charset.forName("UTF8");
 	private static final String HASHMEM_FOLDER = "";
 	private static final String SETTINGS_FILE = ".settings";
+	private static final String DELETED_FILE = ".deleted";
+	private static final String SYNC_FILE = ".sync";
 
 	private final VirtualFileManager fileManager = VirtualFileManager.getInstance();
 	private final Condition<VirtualFile> canBeScratch = new Condition<VirtualFile>() {
@@ -172,7 +173,7 @@ public class FileSystem implements BulkFileListener, Startable {
 
 	public boolean isHashMemNote(final VirtualFile virtualFile) {
 		VirtualFile scratchFolder = getRootFolder();
-		return scratchFolder != null && ContainerUtil.exists(scratchFolder.getChildren(), new Condition<VirtualFile>() {
+		return scratchFolder != null && !isHidden(virtualFile.getName()) && ContainerUtil.exists(scratchFolder.getChildren(), new Condition<VirtualFile>() {
 			@Override public boolean value(VirtualFile it) {
 				return it.equals(virtualFile);
 			}
@@ -207,7 +208,7 @@ public class FileSystem implements BulkFileListener, Startable {
     }
 
     private void markAsDeleted(VirtualFile file) {
-        createFile(file.getName(), "", removedFolderPath);
+        syncService.markAsDeleted(file);
     }
 
 	private static boolean isHidden(String fileName) {
@@ -235,14 +236,23 @@ public class FileSystem implements BulkFileListener, Startable {
 
     @Override
     public void after(@NotNull List<? extends VFileEvent> events) {
+        long now = System.currentTimeMillis();
+
         for (VFileEvent e : events) {
             VirtualFile file = e.getFile();
             if (isSettingsFile(file)) {
                 refreshSettings(file);
             } else if (isHashMemNote(file)) {
-                syncService.syncLater();
+                if (!syncService.isSyncing()) {
+                    if (isChangeEvent(e)) syncService.setLastModified(file, now);
+                    syncService.syncLater();
+                }
             }
         }
+    }
+
+    private boolean isChangeEvent(VFileEvent e) {
+        return e instanceof VFileCreateEvent || e instanceof VFileDeleteEvent || e instanceof VFileContentChangeEvent || e instanceof VFileCopyEvent || e instanceof VFileMoveEvent;
     }
 
     //settings
@@ -258,19 +268,45 @@ public class FileSystem implements BulkFileListener, Startable {
         VirtualFile settings = virtualFileBy(SETTINGS_FILE);
 
         if (settings == null) {
-            createDefaultSettingsFile();
-            settings = virtualFileBy(SETTINGS_FILE);
+            settings = createDefaultSettingsFile();
         }
 
         return settings;
     }
 
-    private void createDefaultSettingsFile() {
-        boolean created = createFile(SETTINGS_FILE, SettingsService.DEFAULT_CONTENT);
+    public VirtualFile getDeletedFile() {
+        VirtualFile deleted = virtualFileBy(DELETED_FILE);
+
+        if (deleted == null) {
+            deleted = createSupportFile(DELETED_FILE, "");
+        }
+
+        return deleted;
+    }
+
+    public VirtualFile getSyncFile() {
+        VirtualFile deleted = virtualFileBy(SYNC_FILE);
+
+        if (deleted == null) {
+            deleted = createSupportFile(SYNC_FILE, "");
+        }
+
+        return deleted;
+    }
+
+
+    private VirtualFile createDefaultSettingsFile() {
+        return createSupportFile(SETTINGS_FILE, SettingsService.DEFAULT_CONTENT);
+    }
+
+    private VirtualFile createSupportFile(String fileName, String content) {
+        boolean created = createFile(fileName, content);
 
         if (!created) {
-            throw new IllegalStateException("Unable to create settings file");
+            throw new IllegalStateException("Unable to create file " + fileName + " with content " + content);
         }
+
+        return virtualFileBy(fileName);
     }
 
     private boolean isSettingsFile(VirtualFile file) {
