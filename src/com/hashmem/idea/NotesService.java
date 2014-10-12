@@ -25,6 +25,10 @@ public class NotesService {
         fileSystem.createFile(note.getKey(), note.getContent());
     }
 
+    public void remove(String key) {
+        fileSystem.removeFile(key);
+    }
+
     public List<Note> getNotes() {
         return map(fileSystem.listFiles(), new Function<String, Note>() {
             @Override

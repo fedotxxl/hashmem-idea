@@ -17,6 +17,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.util.Condition;
 import com.intellij.util.Function;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.intellij.util.containers.ContainerUtil.filter;
 import static com.intellij.util.containers.ContainerUtil.map;
 
 public class SyncService {
@@ -43,7 +45,14 @@ public class SyncService {
     private SyncChangeService syncChangeService;
     private Router router;
     private volatile boolean syncing = false;
-    private ConcurrentMap<String, Boolean> notesToSkipChangeEvents = new ConcurrentHashMap<String, Boolean>();
+    private ConcurrentMap<String, Boolean> notesToSkipChangeOrDeletedEvents = new ConcurrentHashMap<String, Boolean>();
+
+    private static final Condition NOT_NULL_CONDITION = new Condition<Object>() {
+        @Override
+        public boolean value(Object o) {
+            return o != null;
+        }
+    };
 
     private long lastSync = 0l; //todo rememer
 
@@ -96,8 +105,8 @@ public class SyncService {
         });
     }
 
-    private void markAsDeleted(String key) {
-        syncChangeService.markAsDeleted(key);
+    private void markAsDeleted(String key, long date) {
+        syncChangeService.markAsDeleted(key, date);
     }
 
     private void markAsUpdated(String key, long date) {
@@ -123,26 +132,34 @@ public class SyncService {
     }
 
     private void saveNoteFromServer(NoteToSync note, long synced) {
-        markAsUpdated(note.getKey(), synced);
-        skipNextChangeEvent(note.getKey());
-        notesService.save(note);
+        String key = note.getKey();
+
+        skipNextChangeOrDeletedEvent(key);
+
+        if (note.isDeleted()) {
+            markAsDeleted(key, synced);
+            notesService.remove(key);
+        } else {
+            markAsUpdated(key, synced);
+            notesService.save(note);
+        }
     }
 
     private Collection<NoteToSync> getNotesToSync(long since) {
         Collection<NoteToSync> answer = Lists.newArrayList();
 
-        answer.addAll(map(syncChangeService.getUpdatedSince(since), new Function<String, NoteToSync>() {
+        answer.addAll(filter(map(syncChangeService.getUpdatedSince(since), new Function<String, NoteToSync>() {
             @Override
             public NoteToSync fun(String key) {
                 return getNoteToSync(key, syncChangeService.getLastUpdated(key), false);
             }
-        }));
-        answer.addAll(map(syncChangeService.getDeletedSince(since), new Function<String, NoteToSync>() {
+        }), NOT_NULL_CONDITION));
+        answer.addAll(filter(map(syncChangeService.getDeletedSince(since), new Function<String, NoteToSync>() {
             @Override
             public NoteToSync fun(String key) {
                 return getNoteToSync(key, syncChangeService.getLastUpdated(key), true);
             }
-        }));
+        }), NOT_NULL_CONDITION));
 
         return answer;
     }
@@ -191,28 +208,33 @@ public class SyncService {
         return answer;
     }
 
-    private void skipNextChangeEvent(String key) {
-        notesToSkipChangeEvents.put(key, true);
+    private void skipNextChangeOrDeletedEvent(String key) {
+        notesToSkipChangeOrDeletedEvents.put(key, true);
     }
 
-    private void doOrSkipChangeEventOnce(String key, Runnable runnable) {
-        Boolean answer = notesToSkipChangeEvents.get(key);
+    private void doOrSkipEventOnce(String key, Runnable runnable) {
+        Boolean answer = notesToSkipChangeOrDeletedEvents.get(key);
         if (answer != null && answer.equals(true)) {
-            notesToSkipChangeEvents.put(key, false);
+            notesToSkipChangeOrDeletedEvents.put(key, false);
         } else {
             runnable.run();
         }
     }
 
     @Subscribe
-    public void onNoteFileDeleted(NoteFileDeletedEvent e) {
-        markAsDeleted(e.getKey());
-        syncLater();
+    public void onNoteFileDeleted(final NoteFileDeletedEvent e) {
+        doOrSkipEventOnce(e.getKey(), new Runnable() {
+            @Override
+            public void run() {
+                markAsDeleted(e.getKey(), System.currentTimeMillis());
+                syncLater();
+            }
+        });
     }
 
     @Subscribe
     public void onNoteFileChanged(final NoteFileChangedEvent e) {
-        doOrSkipChangeEventOnce(e.getKey(), new Runnable() {
+        doOrSkipEventOnce(e.getKey(), new Runnable() {
             @Override
             public void run() {
                 markAsUpdated(e.getKey(), System.currentTimeMillis());
