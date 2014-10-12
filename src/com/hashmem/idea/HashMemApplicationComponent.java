@@ -1,5 +1,6 @@
 package com.hashmem.idea;
 
+import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.remote.AuthService;
 import com.hashmem.idea.remote.HttpService;
 import com.hashmem.idea.remote.SyncChangeService;
@@ -29,6 +30,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         notesService = new NotesService();
         actionProcessor = new ActionProcessor();
 
+        EventBus eventBus = new EventBus();
         Ide ide = new Ide();
         FileSystem fileSystem = new FileSystem();
         AuthService authService = new AuthService();
@@ -53,7 +55,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         router.setSettingsService(settingsService);
         router.setAuthService(authService);
         fileSystem.setSettingsService(settingsService);
-        fileSystem.setSyncService(syncService);
+        fileSystem.setEventBus(eventBus);
         ide.setFileSystem(fileSystem);
         syncChangeService.setFileSystem(fileSystem);
 
@@ -66,7 +68,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
 
         connection.subscribe(VirtualFileManager.VFS_CHANGES, fileSystem);
         fileSystem.postConstruct();
-        syncChangeService.postConstruct();
+        eventBus.register(syncService);
     }
 
     public void disposeComponent() {

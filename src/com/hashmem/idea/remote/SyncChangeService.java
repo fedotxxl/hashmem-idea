@@ -6,14 +6,14 @@ package com.hashmem.idea.remote;
 
 import com.google.gson.Gson;
 import com.hashmem.idea.FileSystem;
-import com.hashmem.idea.Startable;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.util.Computable;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
-public class SyncChangeService implements Startable {
+public class SyncChangeService {
 
     private FileSystem fileSystem;
     private SyncChangeData syncChangeData;
@@ -27,44 +27,25 @@ public class SyncChangeService implements Startable {
     }
 
     void markAsDeleted(String key, long date) {
-        syncChangeData.markAsDeleted(key, date);
+        getSyncChangeData().markAsDeleted(key, date);
         saveSyncChangeData();
     }
 
     void markAsUpdated(String key, long date) {
-        syncChangeData.markAsUpdated(key, date);
+        getSyncChangeData().markAsUpdated(key, date);
         saveSyncChangeData();
     }
 
     List<String> getUpdatedSince(long since) {
-        return syncChangeData.getUpdatedSince(since);
+        return getSyncChangeData().getUpdatedSince(since);
     }
 
     List<String> getDeletedSince(long since) {
-       return syncChangeData.getDeletedSince(since);
+       return getSyncChangeData().getDeletedSince(since);
     }
 
     Long getLastUpdated(String key) {
-        return syncChangeData.getLastUpdated(key);
-    }
-
-    @Override
-    public void postConstruct() {
-        readSyncChangeData();
-    }
-
-    private void readSyncChangeData() {
-        ApplicationManager.getApplication().executeOnPooledThread(new Runnable() {
-            public void run() {
-                try {
-                    syncChangeData = new Gson().fromJson(new InputStreamReader(fileSystem.getSyncFile().getInputStream()), SyncChangeData.class);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } finally {
-                    if (syncChangeData == null) syncChangeData = new SyncChangeData();
-                }
-            }
-        });
+        return getSyncChangeData().getLastUpdated(key);
     }
 
     private void saveSyncChangeData() {
@@ -73,6 +54,30 @@ public class SyncChangeService implements Startable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private SyncChangeData getSyncChangeData() {
+        if (syncChangeData == null) {
+            syncChangeData = ApplicationManager.getApplication().runWriteAction(new Computable<SyncChangeData>() {
+                @Override
+                public SyncChangeData compute() {
+                    try {
+                        SyncChangeData answer = new Gson().fromJson(new InputStreamReader(fileSystem.getSyncFile().getInputStream()), SyncChangeData.class);
+
+                        if (answer != null) {
+                            return answer;
+                        } else {
+                            return new SyncChangeData();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+                }
+            });
+        }
+
+        return syncChangeData;
     }
 
     //=========== SETTERS ============

@@ -14,7 +14,9 @@
 
 package com.hashmem.idea;
 
-import com.hashmem.idea.remote.SyncService;
+import com.google.common.eventbus.EventBus;
+import com.hashmem.idea.event.NoteFileChangedEvent;
+import com.hashmem.idea.event.NoteFileDeletedEvent;
 import com.intellij.CommonBundle;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.PathManager;
@@ -46,7 +48,7 @@ public class FileSystem implements BulkFileListener, Startable {
 	private static final Logger LOG = Logger.getInstance(FileSystem.class);
 
     private SettingsService settingsService;
-    private SyncService syncService;
+    private EventBus eventBus;
 
 	/**
 	 * Use UTF-8 to be compatible with old version of plugin.
@@ -82,10 +84,11 @@ public class FileSystem implements BulkFileListener, Startable {
 			return Collections.emptyList();
 		}
 		return map(findAll(virtualFile.getChildren(), canBeScratch), new Function<VirtualFile, String>() {
-			@Override public String fun(VirtualFile it) {
-				return it.getName();
-			}
-		});
+            @Override
+            public String fun(VirtualFile it) {
+                return it.getName();
+            }
+        });
 	}
 
 	public boolean scratchFileExists(String fileName) {
@@ -124,7 +127,8 @@ public class FileSystem implements BulkFileListener, Startable {
             @Override
             public Boolean compute() {
                 return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
-                    @Override public Boolean compute() {
+                    @Override
+                    public Boolean compute() {
                         try {
                             ensureExists(new File(path));
 
@@ -147,20 +151,20 @@ public class FileSystem implements BulkFileListener, Startable {
 
 	public boolean removeFile(final String fileName) {
 		return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
-			@Override public Boolean compute() {
-				VirtualFile virtualFile = virtualFileBy(fileName);
-				if (virtualFile == null) return false;
+            @Override
+            public Boolean compute() {
+                VirtualFile virtualFile = virtualFileBy(fileName);
+                if (virtualFile == null) return false;
 
-				try {
-                    markAsDeleted(virtualFile);
-					virtualFile.delete(FileSystem.this);
-					return true;
-				} catch (IOException e) {
-					LOG.warn(e);
-					return false;
-				}
-			}
-		});
+                try {
+                    virtualFile.delete(FileSystem.this);
+                    return true;
+                } catch (IOException e) {
+                    LOG.warn(e);
+                    return false;
+                }
+            }
+        });
 	}
 
     @Nullable public VirtualFile virtualFileBy(String fileName) {
@@ -207,9 +211,6 @@ public class FileSystem implements BulkFileListener, Startable {
         return new File(file.getCanonicalPath()).lastModified();
     }
 
-    private void markAsDeleted(VirtualFile file) {
-        syncService.markAsDeleted(file);
-    }
 
 	private static boolean isHidden(String fileName) {
 		return fileName.startsWith(".");
@@ -226,9 +227,9 @@ public class FileSystem implements BulkFileListener, Startable {
         for (VFileEvent e : events) {
             if (e instanceof VFileDeleteEvent) {
                 VFileDeleteEvent event = (VFileDeleteEvent) e;
-                if (isHashMemNote(e.getFile())) {
-                    markAsDeleted(e.getFile());
-                    syncService.syncLater();
+                VirtualFile file = e.getFile();
+                if (isHashMemNote(file)) {
+                      eventBus.post(new NoteFileDeletedEvent(getNoteKey(file), file));
                 }
             }
         }
@@ -242,13 +243,14 @@ public class FileSystem implements BulkFileListener, Startable {
             VirtualFile file = e.getFile();
             if (isSettingsFile(file)) {
                 refreshSettings(file);
-            } else if (isHashMemNote(file)) {
-                if (!syncService.isSyncing()) {
-                    if (isChangeEvent(e)) syncService.setLastModified(file, now);
-                    syncService.syncLater();
-                }
+            } else if (isHashMemNote(file) && isChangeEvent(e)) {
+                eventBus.post(new NoteFileChangedEvent(getNoteKey(file), file));
             }
         }
+    }
+
+    public String getNoteKey(VirtualFile file) {
+        return file.getName();
     }
 
     private boolean isChangeEvent(VFileEvent e) {
@@ -323,7 +325,7 @@ public class FileSystem implements BulkFileListener, Startable {
         this.settingsService = settingsService;
     }
 
-    public void setSyncService(SyncService syncService) {
-        this.syncService = syncService;
+    public void setEventBus(EventBus eventBus) {
+        this.eventBus = eventBus;
     }
 }

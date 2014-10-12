@@ -53,7 +53,7 @@ public class NotesService {
     }
 
     public String getKey(VirtualFile file) {
-        return file.getName();
+        return fileSystem.getNoteKey(file);
     }
 
     public Collection<Note> getNotesChangedSince(long since) {

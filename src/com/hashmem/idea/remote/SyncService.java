@@ -5,17 +5,19 @@
 package com.hashmem.idea.remote;
 
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.hashmem.NoteToSync;
 import com.hashmem.idea.*;
+import com.hashmem.idea.event.NoteFileChangedEvent;
+import com.hashmem.idea.event.NoteFileDeletedEvent;
 import com.hashmem.idea.ui.NotificationService;
 import com.intellij.openapi.application.AccessToken;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.Function;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
@@ -27,6 +29,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.intellij.util.containers.ContainerUtil.map;
 
@@ -40,6 +44,7 @@ public class SyncService {
     private SyncChangeService syncChangeService;
     private Router router;
     private volatile boolean syncing = false;
+    private ConcurrentMap<String, Boolean> notesToSkipChangeEvents = new ConcurrentHashMap<String, Boolean>();
 
     private long lastSync = 0l; //todo rememer
 
@@ -48,7 +53,7 @@ public class SyncService {
     }
 
     public synchronized void sync() {
-        sync(getLastSync());
+        sync(lastSync);
     }
 
     public synchronized void syncAll() {
@@ -66,7 +71,7 @@ public class SyncService {
             long synced = System.currentTimeMillis();
             Collection<NoteToSync> notes = pushNotes(since, getNotesToSync(since));
             saveChangedNotes(notes, synced);
-            setLastSync(synced);
+            lastSync = synced;
         } catch (NotAuthenticatedException nae) {
             notificationService.warn("Failed to sync hashMem notes. Is username/password correct?");
         } catch (UnknownSyncException use) {
@@ -92,20 +97,12 @@ public class SyncService {
         });
     }
 
-    public boolean isSyncing() {
-        return syncing;
+    private void markAsDeleted(String key) {
+        syncChangeService.markAsDeleted(key);
     }
 
-    public void setLastModified(String key, long lastModified) {
-        System.out.println(key + " - " + lastModified);
-    }
-
-    public void setLastModified(VirtualFile file, long lastModified) {
-        setLastModified(notesService.getKey(file), lastModified);
-    }
-
-    public void markAsDeleted(VirtualFile file) {
-        syncChangeService.markAsDeleted(notesService.getKey(file));
+    private void markAsUpdated(String key, long date) {
+        syncChangeService.markAsUpdated(key, date);
     }
 
     private void saveChangedNotes(Collection<NoteToSync> notes, long synced) {
@@ -117,20 +114,17 @@ public class SyncService {
             token = ApplicationManager.getApplication().acquireWriteActionLock(SyncService.class);
 
             for (NoteToSync note : notes) {
-                setLastModified(note.getKey(), synced);
-                notesService.save(note);
+                saveNoteFromServer(note, synced);
             }
         } finally {
             if (token != null) token.finish();
         }
     }
 
-    private long getLastSync() {
-        return lastSync;
-    }
-
-    private void setLastSync(long sync) {
-        lastSync = sync;
+    private void saveNoteFromServer(NoteToSync note, long synced) {
+        markAsUpdated(note.getKey(), synced);
+        skipNextChangeEvent(note.getKey());
+        notesService.save(note);
     }
 
     private Collection<NoteToSync> getNotesToSync(long since) {
@@ -194,6 +188,36 @@ public class SyncService {
         }
 
         return answer;
+    }
+
+    private void skipNextChangeEvent(String key) {
+        notesToSkipChangeEvents.put(key, true);
+    }
+
+    private void doOrSkipChangeEventOnce(String key, Runnable runnable) {
+        Boolean answer = notesToSkipChangeEvents.get(key);
+        if (answer != null && answer.equals(true)) {
+            notesToSkipChangeEvents.put(key, false);
+        } else {
+            runnable.run();
+        }
+    }
+
+    @Subscribe
+    public void onNoteFileDeleted(NoteFileDeletedEvent e) {
+        markAsDeleted(e.getKey());
+        syncLater();
+    }
+
+    @Subscribe
+    public void onNoteFileChanged(final NoteFileChangedEvent e) {
+        doOrSkipChangeEventOnce(e.getKey(), new Runnable() {
+            @Override
+            public void run() {
+                markAsUpdated(e.getKey(), System.currentTimeMillis());
+                syncLater();
+            }
+        });
     }
 
     private static class UnknownSyncException extends Exception {
