@@ -13,7 +13,6 @@ import com.hashmem.idea.*;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
 import com.hashmem.idea.ui.NotificationService;
-import com.intellij.openapi.application.AccessToken;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -105,20 +104,22 @@ public class SyncService {
         syncChangeService.markAsUpdated(key, date);
     }
 
-    private void saveChangedNotes(Collection<NoteToSync> notes, long synced) {
+    private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced) {
         if (notes == null || notes.size() == 0) return;
 
-        AccessToken token = null;
-
-        try {
-            token = ApplicationManager.getApplication().acquireWriteActionLock(SyncService.class);
-
-            for (NoteToSync note : notes) {
-                saveNoteFromServer(note, synced);
+        ApplicationManager.getApplication().invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                ApplicationManager.getApplication().runWriteAction(new Runnable() {
+                    @Override
+                    public void run() {
+                        for (NoteToSync note : notes) {
+                            saveNoteFromServer(note, synced);
+                        }
+                    }
+                });
             }
-        } finally {
-            if (token != null) token.finish();
-        }
+        });
     }
 
     private void saveNoteFromServer(NoteToSync note, long synced) {
