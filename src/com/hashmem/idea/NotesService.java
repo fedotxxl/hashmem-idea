@@ -4,15 +4,12 @@
  */
 package com.hashmem.idea;
 
-import com.google.common.collect.Lists;
 import com.hashmem.NoteToSync;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.Function;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -54,28 +51,6 @@ public class NotesService {
 
     public String getKey(VirtualFile file) {
         return fileSystem.getNoteKey(file);
-    }
-
-    public Collection<Note> getNotesChangedSince(long since) {
-        return mapFiles(fileSystem.getNotesChangesSince(since), false);
-    }
-
-    public Collection<Note> getNotesDeletedSince(long since) {
-        return mapFiles(fileSystem.getNotesDeletedSince(since), true);
-    }
-
-    private Collection<Note> mapFiles(Collection<VirtualFile> files, boolean isDeleted) {
-        ArrayList<Note> answer = Lists.newArrayList();
-
-        for (VirtualFile file : files) {
-            try {
-                answer.add(new Note(file, isDeleted));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return answer;
     }
 
     public boolean isValidKey(String key) {

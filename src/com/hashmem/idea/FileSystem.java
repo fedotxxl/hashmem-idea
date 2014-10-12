@@ -35,9 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 
 import static com.intellij.util.containers.ContainerUtil.findAll;
@@ -56,7 +54,6 @@ public class FileSystem implements BulkFileListener, Startable {
 	private static final Charset CHARSET = Charset.forName("UTF8");
 	private static final String HASHMEM_FOLDER = "";
 	private static final String SETTINGS_FILE = ".settings";
-	private static final String DELETED_FILE = ".deleted";
 	private static final String SYNC_FILE = ".sync";
 
 	private final VirtualFileManager fileManager = VirtualFileManager.getInstance();
@@ -66,12 +63,10 @@ public class FileSystem implements BulkFileListener, Startable {
 		}
 	};
 	private final String scratchesFolderPath;
-	private final String removedFolderPath;
 
 
     public FileSystem() {
         scratchesFolderPath = PathManager.getPluginsPath() + "/hm/";
-        removedFolderPath = PathManager.getPluginsPath() + "/hm.removed/";
     }
 
     private VirtualFile getRootFolder() {
@@ -184,34 +179,6 @@ public class FileSystem implements BulkFileListener, Startable {
 		});
 	}
 
-    public Collection<VirtualFile> getNotesChangesSince(long since) {
-        return getFilesChangedInFolder(scratchesFolderPath, since);
-    }
-
-    public Collection<VirtualFile> getNotesDeletedSince(long since) {
-        return getFilesChangedInFolder(removedFolderPath, since);
-    }
-
-    private Collection<VirtualFile> getFilesChangedInFolder(String path, long since) {
-        Collection<VirtualFile> answer = new HashSet<VirtualFile>();
-        VirtualFile deletedFolder = virtualFileBy(path, true);
-
-        if (deletedFolder != null) {
-            for (VirtualFile file : deletedFolder.getChildren()) {
-                if (!file.isDirectory()) {
-                    if (getLastModified(file) > since && !isHidden(file.getName())) answer.add(file);
-                }
-            }
-        }
-
-        return answer;
-    }
-
-    public static long getLastModified(VirtualFile file) {
-        return new File(file.getCanonicalPath()).lastModified();
-    }
-
-
 	private static boolean isHidden(String fileName) {
 		return fileName.startsWith(".");
 	}
@@ -274,16 +241,6 @@ public class FileSystem implements BulkFileListener, Startable {
         }
 
         return settings;
-    }
-
-    public VirtualFile getDeletedFile() {
-        VirtualFile deleted = virtualFileBy(DELETED_FILE);
-
-        if (deleted == null) {
-            deleted = createSupportFile(DELETED_FILE, "");
-        }
-
-        return deleted;
     }
 
     public VirtualFile getSyncFile() {
