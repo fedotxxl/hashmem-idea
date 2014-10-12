@@ -56,17 +56,16 @@ public class FileSystem implements BulkFileListener, Startable {
 	private static final String SETTINGS_FILE = ".settings";
 	private static final String SYNC_FILE = ".sync";
 
-	private final VirtualFileManager fileManager = VirtualFileManager.getInstance();
-	private final Condition<VirtualFile> canBeScratch = new Condition<VirtualFile>() {
+    private final String notesFolderPath;
+    private final VirtualFileManager fileManager = VirtualFileManager.getInstance();
+	private final Condition<VirtualFile> canBeNote = new Condition<VirtualFile>() {
 		@Override public boolean value(VirtualFile it) {
 			return it != null && it.exists() && !it.isDirectory() && !isHidden(it.getName());
 		}
 	};
-	private final String scratchesFolderPath;
-
 
     public FileSystem() {
-        scratchesFolderPath = PathManager.getPluginsPath() + "/hm/";
+        notesFolderPath = PathManager.getPluginsPath() + "/hm/";
     }
 
     private VirtualFile getRootFolder() {
@@ -78,7 +77,7 @@ public class FileSystem implements BulkFileListener, Startable {
 		if (virtualFile == null || !virtualFile.exists()) {
 			return Collections.emptyList();
 		}
-		return map(findAll(virtualFile.getChildren(), canBeScratch), new Function<VirtualFile, String>() {
+		return map(findAll(virtualFile.getChildren(), canBeNote), new Function<VirtualFile, String>() {
             @Override
             public String fun(VirtualFile it) {
                 return it.getName();
@@ -86,9 +85,8 @@ public class FileSystem implements BulkFileListener, Startable {
         });
 	}
 
-	public boolean scratchFileExists(String fileName) {
-		VirtualFile virtualFile = virtualFileBy(fileName);
-		return canBeScratch.value(virtualFile);
+	public boolean noteFileExists(String fileName) {
+		return canBeNote.value(virtualFileBy(fileName));
 	}
 
 	public boolean renameFile(String oldFileName, final String newFileName) {
@@ -113,7 +111,7 @@ public class FileSystem implements BulkFileListener, Startable {
 	}
 
     public boolean createFile(final String fileName, final String text) {
-        return createFile(fileName, text, scratchesFolderPath);
+        return createFile(fileName, text, notesFolderPath);
     }
 
     private boolean createFile(final String fileName, final String text, final String path) {
@@ -127,11 +125,11 @@ public class FileSystem implements BulkFileListener, Startable {
                         try {
                             ensureExists(new File(path));
 
-                            VirtualFile scratchesFolder = virtualFileBy(path, true);
-                            if (scratchesFolder == null) return false;
+                            VirtualFile notesFolder = virtualFileBy(path, true);
+                            if (notesFolder == null) return false;
 
-                            VirtualFile scratchFile = scratchesFolder.createChildData(FileSystem.this, fileName);
-                            scratchFile.setBinaryContent(text.getBytes(CHARSET));
+                            VirtualFile noteFile = notesFolder.createChildData(FileSystem.this, fileName);
+                            noteFile.setBinaryContent(text.getBytes(CHARSET));
 
                             return true;
                         } catch (IOException e) {
@@ -167,16 +165,17 @@ public class FileSystem implements BulkFileListener, Startable {
     }
 
 	@Nullable private VirtualFile virtualFileBy(String fileName, boolean isAbsolute) {
-		return fileManager.refreshAndFindFileByUrl("file://" + ((isAbsolute) ? fileName : (scratchesFolderPath + fileName)));
+		return fileManager.refreshAndFindFileByUrl("file://" + ((isAbsolute) ? fileName : (notesFolderPath + fileName)));
 	}
 
 	public boolean isHashMemNote(final VirtualFile virtualFile) {
-		VirtualFile scratchFolder = getRootFolder();
-		return scratchFolder != null && !isHidden(virtualFile.getName()) && ContainerUtil.exists(scratchFolder.getChildren(), new Condition<VirtualFile>() {
-			@Override public boolean value(VirtualFile it) {
-				return it.equals(virtualFile);
-			}
-		});
+		VirtualFile notesFolder = getRootFolder();
+		return notesFolder != null && !isHidden(virtualFile.getName()) && ContainerUtil.exists(notesFolder.getChildren(), new Condition<VirtualFile>() {
+            @Override
+            public boolean value(VirtualFile it) {
+                return it.equals(virtualFile);
+            }
+        });
 	}
 
 	private static boolean isHidden(String fileName) {
@@ -193,7 +192,6 @@ public class FileSystem implements BulkFileListener, Startable {
     public void before(@NotNull List<? extends VFileEvent> events) {
         for (VFileEvent e : events) {
             if (e instanceof VFileDeleteEvent) {
-                VFileDeleteEvent event = (VFileDeleteEvent) e;
                 VirtualFile file = e.getFile();
                 if (isHashMemNote(file)) {
                       eventBus.post(new NoteFileDeletedEvent(getNoteKey(file), file));
@@ -204,8 +202,6 @@ public class FileSystem implements BulkFileListener, Startable {
 
     @Override
     public void after(@NotNull List<? extends VFileEvent> events) {
-        long now = System.currentTimeMillis();
-
         for (VFileEvent e : events) {
             VirtualFile file = e.getFile();
             if (isSettingsFile(file)) {

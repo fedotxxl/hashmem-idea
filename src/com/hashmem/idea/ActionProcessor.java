@@ -68,7 +68,7 @@ public class ActionProcessor {
     }
 
     private boolean create(String key, Project project) {
-        if (!fileSystem.scratchFileExists(key)) {
+        if (!fileSystem.noteFileExists(key)) {
             if (!fileSystem.createFile(key, "")) {
                 ide.getLog().canNotCreateFile(key);
                 return false;
@@ -79,7 +79,7 @@ public class ActionProcessor {
     }
 
     private boolean delete(String key) {
-        if (fileSystem.scratchFileExists(key)) {
+        if (fileSystem.noteFileExists(key)) {
             if (fileSystem.removeFile(key)) {
                 log.fileDeleted(key);
                 return true;
