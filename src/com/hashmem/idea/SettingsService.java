@@ -4,6 +4,8 @@
  */
 package com.hashmem.idea;
 
+import com.google.common.eventbus.EventBus;
+import com.hashmem.idea.event.SettingsChangeEvent;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.apache.commons.lang.StringUtils;
 
@@ -12,6 +14,8 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class SettingsService {
+
+    private EventBus eventBus;
 
     private String username;
     private String password;
@@ -54,6 +58,7 @@ public class SettingsService {
             username = prop.getProperty("username");
             password = prop.getProperty("password");
 
+            eventBus.post(new SettingsChangeEvent());
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
@@ -65,5 +70,10 @@ public class SettingsService {
                 }
             }
         }
+    }
+
+    //=========== SETTERS ============
+    public void setEventBus(EventBus eventBus) {
+        this.eventBus = eventBus;
     }
 }

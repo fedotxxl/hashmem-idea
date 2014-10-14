@@ -12,7 +12,7 @@ import com.hashmem.NoteToSync;
 import com.hashmem.idea.*;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
-import com.hashmem.idea.ui.NotificationService;
+import com.hashmem.idea.ui.HmLog;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -39,7 +39,7 @@ public class SyncService {
 
     private SettingsService settingsService;
     private AuthService authService;
-    private NotificationService notificationService;
+    private HmLog log;
     private HttpService httpService;
     private NotesService notesService;
     private SyncChangeService syncChangeService;
@@ -60,16 +60,21 @@ public class SyncService {
         this.settingsService = settingsService;
     }
 
-    public synchronized void sync() {
-        sync(lastSync);
+    public synchronized void forceSyncAll() {
+        sync(0l, true);
     }
 
-    public synchronized void syncAll() {
-        sync(0l);
+    private synchronized void sync() {
+        sync(lastSync, false);
     }
 
-    private synchronized void sync(long since) {
+    private synchronized void sync(long since, boolean isForceSync) {
         if (syncing || !settingsService.isSyncEnabled()) {
+
+            if (isForceSync) {
+                log.unableToSyncSinceItIsDisabled();
+            }
+
             return;
         }
 
@@ -77,17 +82,17 @@ public class SyncService {
             syncing = true;
 
             long synced = System.currentTimeMillis();
-            Collection<NoteToSync> notes = pushNotes(since, getNotesToSync(since));
-            saveChangedNotes(notes, synced);
+            Collection<NoteToSync> notesToServer = getNotesToSync(since);
+            Collection<NoteToSync> notesFromServer = pushNotes(since, notesToServer);
+            saveChangedNotes(notesFromServer, synced, getNotDeletedNotesCount(notesToServer));
             lastSync = synced;
         } catch (NotAuthenticatedException nae) {
-            notificationService.warn("Failed to sync hashMem notes. Is username/password correct?");
+            log.failedToSyncIncorrectUsernameOrPassword();
         } catch (UnknownSyncException use) {
-            notificationService.warn("Unknown hashMem notes sync response: " + use.getStatusCode());
+            log.failedToSyncUnknownResponse(use.getStatusCode());
         } catch (Exception e) {
             e.printStackTrace();
-
-            notificationService.warn("Unknown hashMem notes sync exception");
+            log.failedToSyncUnknownException();
         } finally {
             syncing = false;
         }
@@ -113,36 +118,58 @@ public class SyncService {
         syncChangeService.markAsUpdated(key, date);
     }
 
-    private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced) {
-        if (notes == null || notes.size() == 0) return;
+    private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced, final int sentToServerCount) {
+        final SyncResult result = new SyncResult(sentToServerCount);
 
-        ApplicationManager.getApplication().invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                ApplicationManager.getApplication().runWriteAction(new Runnable() {
-                    @Override
-                    public void run() {
-                        for (NoteToSync note : notes) {
-                            saveNoteFromServer(note, synced);
+        if (notes == null || notes.size() == 0) {
+            log.syncResult(result);
+        } else {
+            ApplicationManager.getApplication().invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    ApplicationManager.getApplication().runWriteAction(new Runnable() {
+                        @Override
+                        public void run() {
+                            for (NoteToSync note : notes) {
+                                SyncChangeResult change = saveNoteFromServer(note, synced);
+                                result.increase(change);
+                            }
+
+                            log.syncResult(result);
                         }
-                    }
-                });
-            }
-        });
+                    });
+                }
+            });
+        }
     }
 
-    private void saveNoteFromServer(NoteToSync note, long synced) {
+    private SyncChangeResult saveNoteFromServer(NoteToSync note, long synced) {
+        SyncChangeResult answer;
         String key = note.getKey();
 
         skipNextChangeOrDeletedEvent(key);
 
         if (note.isDeleted()) {
             markAsDeleted(key, synced);
-            notesService.remove(key);
+
+            if (notesService.remove(key)) {
+                answer = SyncChangeResult.DELETED;
+            } else {
+                answer = SyncChangeResult.NOTHING_CHANGED;
+            }
         } else {
             markAsUpdated(key, synced);
+
+            if (notesService.has(key)) {
+                answer = SyncChangeResult.UPDATED;
+            } else {
+                answer = SyncChangeResult.CREATED;
+            }
+
             notesService.save(note);
         }
+
+        return answer;
     }
 
     private Collection<NoteToSync> getNotesToSync(long since) {
@@ -221,6 +248,16 @@ public class SyncService {
         }
     }
 
+    private int getNotDeletedNotesCount(Collection<NoteToSync> notes) {
+        int answer = 0;
+
+        for (NoteToSync note : notes) {
+            if (!note.isDeleted()) answer++;
+        }
+
+        return answer;
+    }
+
     @Subscribe
     public void onNoteFileDeleted(final NoteFileDeletedEvent e) {
         doOrSkipEventOnce(e.getKey(), new Runnable() {
@@ -260,10 +297,58 @@ public class SyncService {
         }
     }
 
-    private static class SyncResponse {
+    private static enum SyncChangeResult {
+        CREATED, UPDATED, DELETED, NOTHING_CHANGED
+    }
 
-        List<Note> data;
+    public static class SyncResult {
 
+        private int sentToServerCount = 0;
+        private int created = 0;
+        private int updated = 0;
+        private int deleted = 0;
+
+        private SyncResult(int sentToServerCount) {
+            this.sentToServerCount = sentToServerCount;
+        }
+
+        public void increase(SyncChangeResult change) {
+            if (change == SyncChangeResult.CREATED) {
+                created++;
+            } else if (change == SyncChangeResult.UPDATED) {
+                updated++;
+            } else if (change ==SyncChangeResult.DELETED) {
+                deleted++;
+            }
+        }
+
+        public int getSentToServerCount() {
+            return sentToServerCount;
+        }
+
+        public int getCreated() {
+            return created;
+        }
+
+        public int getUpdated() {
+            return updated;
+        }
+
+        public int getDeleted() {
+            return deleted;
+        }
+
+        public boolean hasCreated() {
+            return created > 0;
+        }
+
+        public boolean hasUpdated() {
+            return updated > 0;
+        }
+
+        public boolean hasDeleted() {
+            return deleted > 0;
+        }
     }
 
     //=========== SETTERS ============
@@ -271,8 +356,8 @@ public class SyncService {
         this.authService = authService;
     }
 
-    public void setNotificationService(NotificationService notificationService) {
-        this.notificationService = notificationService;
+    public void setLog(HmLog log) {
+        this.log = log;
     }
 
     public void setHttpService(HttpService httpService) {

@@ -4,9 +4,11 @@
  */
 package com.hashmem.idea.remote;
 
+import com.google.common.eventbus.Subscribe;
 import com.hashmem.idea.NotAuthenticatedException;
 import com.hashmem.idea.Router;
 import com.hashmem.idea.SettingsService;
+import com.hashmem.idea.event.SettingsChangeEvent;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -19,7 +21,7 @@ public class AuthService {
     private HttpService httpService;
     private Router router;
 
-    private String token = null;
+    private volatile String token = null;
 
     public synchronized String getToken() throws NotAuthenticatedException {
         if (token == null) {
@@ -50,6 +52,11 @@ public class AuthService {
     public synchronized String refreshToken() throws NotAuthenticatedException {
         token = null;
         return getToken();
+    }
+
+    @Subscribe
+    public void onSettingsChange(final SettingsChangeEvent e) {
+        token = null;
     }
 
     //=========== SETTERS ============

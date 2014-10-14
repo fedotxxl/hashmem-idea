@@ -68,7 +68,7 @@ public class ActionProcessor {
     }
 
     private boolean create(String key, Project project) {
-        if (!fileSystem.noteFileExists(key)) {
+        if (!notesService.has(key)) {
             if (!fileSystem.createFile(key, "")) {
                 ide.getLog().canNotCreateFile(key);
                 return false;
@@ -79,7 +79,7 @@ public class ActionProcessor {
     }
 
     private boolean delete(String key) {
-        if (fileSystem.noteFileExists(key)) {
+        if (notesService.has(key)) {
             if (fileSystem.removeFile(key)) {
                 log.fileDeleted(key);
                 return true;
@@ -105,7 +105,7 @@ public class ActionProcessor {
             ide.open(fileSystem.getSettingsFile(), project);
             return true;
         } else if (command == Command.SYNC) {
-            syncService.syncAll();
+            syncService.forceSyncAll();
             return true;
         } else if (command == Command.HELP) {
             ide.openBrowser(router.getHelp());

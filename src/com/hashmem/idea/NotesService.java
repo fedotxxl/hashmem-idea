@@ -25,8 +25,12 @@ public class NotesService {
         fileSystem.createFile(note.getKey(), note.getContent());
     }
 
-    public void remove(String key) {
-        fileSystem.removeFile(key);
+    public boolean has(String key) {
+        return fileSystem.noteFileExists(key);
+    }
+
+    public boolean remove(String key) {
+        return fileSystem.removeFile(key);
     }
 
     public List<Note> getNotes() {

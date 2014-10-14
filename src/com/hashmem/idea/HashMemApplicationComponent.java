@@ -5,8 +5,8 @@ import com.hashmem.idea.remote.AuthService;
 import com.hashmem.idea.remote.HttpService;
 import com.hashmem.idea.remote.SyncChangeService;
 import com.hashmem.idea.remote.SyncService;
+import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.ui.Ide;
-import com.hashmem.idea.ui.NotificationService;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.ApplicationComponent;
 import com.intellij.openapi.vfs.VirtualFileManager;
@@ -25,17 +25,31 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         connection = ApplicationManager.getApplication().getMessageBus().connect();
     }
 
+    @Override
     public void initComponent() {
+        //start plugin
+        startApplicationContext();
+
+        //sync on start
+        syncService.syncLater();
+    }
+
+    @Override
+    public void disposeComponent() {
+        connection.disconnect();
+    }
+
+    private void startApplicationContext() {
         syncService = new SyncService();
         notesService = new NotesService();
         actionProcessor = new ActionProcessor();
 
+        HmLog log = new HmLog();
         EventBus eventBus = new EventBus();
         Ide ide = new Ide();
         FileSystem fileSystem = new FileSystem();
         AuthService authService = new AuthService();
         HttpService httpService = new HttpService();
-        NotificationService notificationService = new NotificationService();
         Router router = new Router();
         SettingsService settingsService = new SettingsService();
         SyncChangeService syncChangeService = new SyncChangeService();
@@ -49,9 +63,10 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         syncService.setHttpService(httpService);
         syncService.setAuthService(authService);
         syncService.setNotesService(notesService);
-        syncService.setNotificationService(notificationService);
+        syncService.setLog(log);
         syncService.setSyncChangeService(syncChangeService);
 
+        settingsService.setEventBus(eventBus);
         router.setSettingsService(settingsService);
         router.setAuthService(authService);
         fileSystem.setSettingsService(settingsService);
@@ -69,10 +84,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         connection.subscribe(VirtualFileManager.VFS_CHANGES, fileSystem);
         fileSystem.postConstruct();
         eventBus.register(syncService);
-    }
-
-    public void disposeComponent() {
-        connection.disconnect();
+        eventBus.register(authService);
     }
 
     public SyncService getSyncService() {

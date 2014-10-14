@@ -4,6 +4,7 @@
  */
 package com.hashmem.idea.ui;
 
+import com.hashmem.idea.remote.SyncService;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.NotificationType;
@@ -46,6 +47,36 @@ public class HmLog {
 
     public void unknownCommand(String key) {
         warn("Unknown command: '" + key + "'");
+    }
+
+    public void unableToSyncSinceItIsDisabled() {
+        warn("Syncing with hashMem.com is disabled. <br>" +
+                "Please use :settings command to specify username and password");
+    }
+
+    public void failedToSyncIncorrectUsernameOrPassword() {
+        warn("Failed to sync notes with hashMem.com. Is username/password correct?");
+    }
+
+    public void failedToSyncUnknownResponse(int statusCode) {
+        warn("Unknown hashMem.com notes sync response: " + statusCode);
+    }
+
+    public void failedToSyncUnknownException() {
+        warn("Unknown hashMem notes sync exception");
+    }
+
+    public void syncResult(SyncService.SyncResult result) {
+        String message = "Successfully synced notes. <br>Sent: " + result.getSentToServerCount();
+        if (result.hasCreated()) message += "; created: " + result.getCreated();
+        if (result.hasUpdated()) message += "; updated: " + result.getUpdated();
+        if (result.hasDeleted()) message += "; deleted: " + result.getDeleted();
+
+        if (!result.hasCreated() && !result.hasUpdated() && !result.hasDeleted()) {
+            message += "; received: 0";
+        }
+
+        info(message);
     }
 
     private void warn(String message) {

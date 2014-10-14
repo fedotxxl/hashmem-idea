@@ -58,7 +58,7 @@ public class SyncChangeService {
 
     private SyncChangeData getSyncChangeData() {
         if (syncChangeData == null) {
-            syncChangeData = ApplicationManager.getApplication().runWriteAction(new Computable<SyncChangeData>() {
+            syncChangeData = ApplicationManager.getApplication().runReadAction(new Computable<SyncChangeData>() {
                 @Override
                 public SyncChangeData compute() {
                     try {
