@@ -13,6 +13,8 @@ import com.hashmem.idea.*;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
 import com.hashmem.idea.ui.HmLog;
+import com.hashmem.idea.utils.Callback;
+import com.hashmem.idea.utils.Debouncer;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -47,6 +49,13 @@ public class SyncService {
     private volatile boolean syncing = false;
     private ConcurrentMap<String, Boolean> notesToSkipChangeOrDeletedEvents = new ConcurrentHashMap<String, Boolean>();
 
+    private Debouncer<SyncParams> sync = new Debouncer<SyncParams>(2000, new Callback<SyncParams>() {
+        @Override
+        public void call(SyncParams arg) {
+            doSync(arg.getSince(), arg.isForceSync());
+        }
+    });
+
     private static final Condition NOT_NULL_CONDITION = new Condition<Object>() {
         @Override
         public boolean value(Object o) {
@@ -69,6 +78,10 @@ public class SyncService {
     }
 
     private synchronized void sync(long since, boolean isForceSync) {
+        sync.call(new SyncParams(since, isForceSync));
+    }
+
+    private synchronized void doSync(long since, boolean isForceSync) {
         if (syncing || !settingsService.isSyncEnabled()) {
 
             if (isForceSync) {
@@ -119,7 +132,7 @@ public class SyncService {
     }
 
     private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced, final Collection<NoteToSync> notesToServer) {
-        final SyncResult result = new SyncResult(getNotDeletedNotesCount(notesToServer));
+        final SyncResult result = new SyncResult(notesToServer.size());
 
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
@@ -254,16 +267,6 @@ public class SyncService {
         }
     }
 
-    private int getNotDeletedNotesCount(Collection<NoteToSync> notes) {
-        int answer = 0;
-
-        for (NoteToSync note : notes) {
-            if (!note.isDeleted()) answer++;
-        }
-
-        return answer;
-    }
-
     @Subscribe
     public void onNoteFileDeleted(final NoteFileDeletedEvent e) {
         doOrSkipEventOnce(e.getKey(), new Runnable() {
@@ -354,6 +357,44 @@ public class SyncService {
 
         public boolean hasDeleted() {
             return deleted > 0;
+        }
+    }
+
+    private static class SyncParams {
+        private long since;
+        private boolean isForceSync;
+
+        private SyncParams(long since, boolean isForceSync) {
+            this.since = since;
+            this.isForceSync = isForceSync;
+        }
+
+        public long getSince() {
+            return since;
+        }
+
+        public boolean isForceSync() {
+            return isForceSync;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SyncParams that = (SyncParams) o;
+
+            if (isForceSync != that.isForceSync) return false;
+            if (since != that.since) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = (int) (since ^ (since >>> 32));
+            result = 31 * result + (isForceSync ? 1 : 0);
+            return result;
         }
     }
 

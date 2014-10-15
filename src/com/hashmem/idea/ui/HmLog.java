@@ -35,7 +35,7 @@ public class HmLog {
     }
 
     public void fileDeleted(String key) {
-        info("Note '" + key + "' was successfully deleted");
+        info("Deleted note: " + key);
     }
     public void canNotDeletedFile(String key) {
         info("Can't delete note file with '" + key + "'");
