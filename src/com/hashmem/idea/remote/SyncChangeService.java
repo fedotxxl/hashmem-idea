@@ -5,12 +5,14 @@
 package com.hashmem.idea.remote;
 
 import com.google.gson.Gson;
+import com.hashmem.NoteToSync;
 import com.hashmem.idea.FileSystem;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.util.Computable;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Collection;
 import java.util.List;
 
 public class SyncChangeService {
@@ -33,6 +35,16 @@ public class SyncChangeService {
 
     void markAsUpdated(String key, long date) {
         getSyncChangeData().markAsUpdated(key, date);
+        saveSyncChangeData();
+    }
+
+    public void forget(Collection<NoteToSync> notes) {
+        SyncChangeData data = getSyncChangeData();
+
+        for (NoteToSync note : notes) {
+            data.forget(note.getKey());
+        }
+
         saveSyncChangeData();
     }
 

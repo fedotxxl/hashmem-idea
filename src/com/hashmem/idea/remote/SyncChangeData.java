@@ -25,6 +25,11 @@ public class SyncChangeData {
         updated.remove(key);
     }
 
+    void forget(String key) {
+        updated.remove(key);
+        deleted.remove(key);
+    }
+
     List<String> getUpdatedSince(long since) {
         return getSince(updated, since);
     }

@@ -84,7 +84,7 @@ public class SyncService {
             long synced = System.currentTimeMillis();
             Collection<NoteToSync> notesToServer = getNotesToSync(since);
             Collection<NoteToSync> notesFromServer = pushNotes(since, notesToServer);
-            saveChangedNotes(notesFromServer, synced, getNotDeletedNotesCount(notesToServer));
+            saveChangedNotes(notesFromServer, synced, notesToServer);
             lastSync = synced;
         } catch (NotAuthenticatedException nae) {
             log.failedToSyncIncorrectUsernameOrPassword();
@@ -118,15 +118,17 @@ public class SyncService {
         syncChangeService.markAsUpdated(key, date);
     }
 
-    private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced, final int sentToServerCount) {
-        final SyncResult result = new SyncResult(sentToServerCount);
+    private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced, final Collection<NoteToSync> notesToServer) {
+        final SyncResult result = new SyncResult(getNotDeletedNotesCount(notesToServer));
 
-        if (notes == null || notes.size() == 0) {
-            log.syncResult(result);
-        } else {
-            ApplicationManager.getApplication().invokeLater(new Runnable() {
-                @Override
-                public void run() {
+        ApplicationManager.getApplication().invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                syncChangeService.forget(notesToServer);
+
+                if (notes == null || notes.size() == 0) {
+                    log.syncResult(result);
+                } else {
                     ApplicationManager.getApplication().runWriteAction(new Runnable() {
                         @Override
                         public void run() {
@@ -139,33 +141,37 @@ public class SyncService {
                         }
                     });
                 }
-            });
-        }
+            }
+        });
     }
 
     private SyncChangeResult saveNoteFromServer(NoteToSync note, long synced) {
         SyncChangeResult answer;
         String key = note.getKey();
 
-        skipNextChangeOrDeletedEvent(key);
-
         if (note.isDeleted()) {
-            markAsDeleted(key, synced);
-
-            if (notesService.remove(key)) {
+            if (notesService.has(key)) {
                 answer = SyncChangeResult.DELETED;
             } else {
                 answer = SyncChangeResult.NOTHING_CHANGED;
             }
         } else {
-            markAsUpdated(key, synced);
+            Note localNote = notesService.getNote(key);
 
-            if (notesService.has(key)) {
+            if (localNote == null) {
+                answer = SyncChangeResult.CREATED;
+            } else if (!localNote.getContent().equals(note.getContent())) {
                 answer = SyncChangeResult.UPDATED;
             } else {
-                answer = SyncChangeResult.CREATED;
+                answer = SyncChangeResult.NOTHING_CHANGED;
             }
+        }
 
+        if (answer == SyncChangeResult.DELETED) {
+            skipNextChangeOrDeletedEvent(key);
+            notesService.remove(key);
+        } else if (answer == SyncChangeResult.CREATED || answer == SyncChangeResult.UPDATED) {
+            skipNextChangeOrDeletedEvent(key);
             notesService.save(note);
         }
 
@@ -191,7 +197,7 @@ public class SyncService {
         return answer;
     }
 
-    private Collection<NoteToSync> pushNotes(long lastSync, Collection<NoteToSync> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
+    private Collection<NoteToSync> pushNotes(long lastSync, final Collection<NoteToSync> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
         long now = System.currentTimeMillis();
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("now", now);
