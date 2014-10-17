@@ -6,21 +6,19 @@ package com.hashmem.idea;
 
 import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.event.SettingsChangeEvent;
-import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.application.ApplicationManager;
 import org.apache.commons.lang.StringUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 
 public class SettingsService {
 
     private EventBus eventBus;
+    private HashMemSettings.Model model;
 
-    private String username;
-    private String password;
-
-    public static final String DEFAULT_CONTENT = "username=\npassword=";
+    public SettingsService() {
+        HashMemSettings settings = ApplicationManager.getApplication().getComponent(HashMemSettings.class);
+        settings.onModelChange(this);
+        model = settings.getModel();
+    }
 
     private static String server = "http://localhost:8080/";
 
@@ -29,11 +27,11 @@ public class SettingsService {
     }
 
     public String getUsername() {
-        return username;
+        return model.getUsername();
     }
 
     public String getPassword() {
-        return password;
+        return model.getPassword();
     }
 
     public String getSyncServer() {
@@ -41,35 +39,13 @@ public class SettingsService {
     }
 
     public boolean isSyncEnabled() {
-        return !StringUtils.isEmpty(username);
+        return !StringUtils.isEmpty(getUsername());
     }
 
-    public void refresh(VirtualFile file) {
-        Properties prop = new Properties();
-        InputStream input = null;
+    public void refresh(HashMemSettings.Model model) {
+        this.model = model;
 
-        try {
-
-            input = file.getInputStream();
-
-            // load a properties file
-            prop.load(input);
-
-            username = prop.getProperty("username");
-            password = prop.getProperty("password");
-
-            eventBus.post(new SettingsChangeEvent());
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        } finally {
-            if (input != null) {
-                try {
-                    input.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+        eventBus.post(new SettingsChangeEvent());
     }
 
     //=========== SETTERS ============

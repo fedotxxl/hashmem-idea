@@ -42,10 +42,9 @@ import static com.intellij.util.containers.ContainerUtil.findAll;
 import static com.intellij.util.containers.ContainerUtil.map;
 
 
-public class FileSystem implements BulkFileListener, Startable {
+public class FileSystem implements BulkFileListener {
 	private static final Logger LOG = Logger.getInstance(FileSystem.class);
 
-    private SettingsService settingsService;
     private EventBus eventBus;
 
 	/**
@@ -53,7 +52,6 @@ public class FileSystem implements BulkFileListener, Startable {
 	 */
 	private static final Charset CHARSET = Charset.forName("UTF8");
 	private static final String HASHMEM_FOLDER = "";
-	private static final String SETTINGS_FILE = ".settings";
 	private static final String SYNC_FILE = ".sync";
 
     private final String notesFolderPath;
@@ -204,9 +202,7 @@ public class FileSystem implements BulkFileListener, Startable {
     public void after(@NotNull List<? extends VFileEvent> events) {
         for (VFileEvent e : events) {
             VirtualFile file = e.getFile();
-            if (isSettingsFile(file)) {
-                refreshSettings(file);
-            } else if (isHashMemNote(file) && isChangeEvent(e)) {
+            if (isHashMemNote(file) && isChangeEvent(e)) {
                 eventBus.post(new NoteFileChangedEvent(getNoteKey(file), file));
             }
         }
@@ -220,25 +216,6 @@ public class FileSystem implements BulkFileListener, Startable {
         return e instanceof VFileCreateEvent || e instanceof VFileDeleteEvent || e instanceof VFileContentChangeEvent || e instanceof VFileCopyEvent || e instanceof VFileMoveEvent;
     }
 
-    //settings
-    private void refreshSettings(VirtualFile settings) {
-        if (settings == null) {
-            createDefaultSettingsFile();
-        } else {
-            settingsService.refresh(settings);
-        }
-    }
-
-    public VirtualFile getSettingsFile() {
-        VirtualFile settings = virtualFileBy(SETTINGS_FILE);
-
-        if (settings == null) {
-            settings = createDefaultSettingsFile();
-        }
-
-        return settings;
-    }
-
     public VirtualFile getSyncFile() {
         VirtualFile deleted = virtualFileBy(SYNC_FILE);
 
@@ -247,11 +224,6 @@ public class FileSystem implements BulkFileListener, Startable {
         }
 
         return deleted;
-    }
-
-
-    private VirtualFile createDefaultSettingsFile() {
-        return createSupportFile(SETTINGS_FILE, SettingsService.DEFAULT_CONTENT);
     }
 
     private VirtualFile createSupportFile(String fileName, String content) {
@@ -264,20 +236,7 @@ public class FileSystem implements BulkFileListener, Startable {
         return virtualFileBy(fileName);
     }
 
-    private boolean isSettingsFile(VirtualFile file) {
-        return SETTINGS_FILE.equals(file.getName()) && file.getParent().equals(getRootFolder());
-    }
-
-    @Override
-    public void postConstruct() {
-        refreshSettings(getSettingsFile());
-    }
-
     //=========== SETTERS ============
-    public void setSettingsService(SettingsService settingsService) {
-        this.settingsService = settingsService;
-    }
-
     public void setEventBus(EventBus eventBus) {
         this.eventBus = eventBus;
     }

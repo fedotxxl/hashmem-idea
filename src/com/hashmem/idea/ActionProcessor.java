@@ -8,6 +8,7 @@ import com.hashmem.idea.remote.SyncService;
 import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.ui.Ide;
 import com.hashmem.idea.ui.Query;
+import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 
 public class ActionProcessor {
@@ -102,7 +103,7 @@ public class ActionProcessor {
             ide.openBrowser(router.getFeedback());
             return true;
         } else if (command == Command.SETTINGS) {
-            ide.open(fileSystem.getSettingsFile(), project);
+            ShowSettingsUtil.getInstance().showSettingsDialog(project, HashMemSettings.class);
             return true;
         } else if (command == Command.SYNC) {
             syncService.forceSyncAll();

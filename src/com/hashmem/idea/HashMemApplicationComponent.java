@@ -69,7 +69,6 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         settingsService.setEventBus(eventBus);
         router.setSettingsService(settingsService);
         router.setAuthService(authService);
-        fileSystem.setSettingsService(settingsService);
         fileSystem.setEventBus(eventBus);
         ide.setFileSystem(fileSystem);
         syncChangeService.setFileSystem(fileSystem);
@@ -82,7 +81,6 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         actionProcessor.setNotesService(notesService);
 
         connection.subscribe(VirtualFileManager.VFS_CHANGES, fileSystem);
-        fileSystem.postConstruct();
         eventBus.register(syncService);
         eventBus.register(authService);
     }

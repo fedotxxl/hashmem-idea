@@ -33,6 +33,9 @@
       <component>
           <implementation-class>com.hashmem.idea.HashMemApplicationComponent</implementation-class>
       </component>
+      <component>
+          <implementation-class>com.hashmem.idea.HashMemSettings</implementation-class>
+      </component>
   </application-components>
 
   <project-components>
