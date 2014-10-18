@@ -35,6 +35,8 @@ public class HmSettingsDialog {
         public HmSettingsForm (HashMemSettings.Model model) {
             super(new BorderLayout());
 
+            final HmSettingsForm _this = this;
+
             hasUsernameOnStartup = !StringUtils.isEmpty(model.getUsername());
 
             JPanel labelPanel = new JPanel(new GridLayout(3, 1));
@@ -90,7 +92,6 @@ public class HmSettingsDialog {
 
             JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
             checkCredentials = new JButton("Check credentials");
-
             checkCredentials.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -101,6 +102,27 @@ public class HmSettingsDialog {
             buttons.add(checkCredentials);
 
             changeUsername = new JButton("Change username");
+            changeUsername.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    String[] options = { "Unlink", "Unlink and remove local notes", "Cancel" };
+                    JPanel panel = new JPanel();
+                    panel.add(new JLabel("<html>If you will change username your local notes will be synced with new account.<br>" +
+                            "To prevent it click 'Unlink and remove local notes'</html>"), BorderLayout.CENTER);
+                    int selected = JOptionPane.showOptionDialog(
+                            _this, panel,"Confirmation", JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
+
+                    if (selected == 0) {
+                        action = HashMemSettings.Action.UNLINK;
+                    } else if (selected == 1) {
+                        action = HashMemSettings.Action.UNLINK_AND_RESET;
+                    }
+
+                    updateUsernameEnabled();
+                    updateChangeUsernameEnabled();
+                }
+            });
 
             buttons.add(changeUsername);
 
