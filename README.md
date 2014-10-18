@@ -27,5 +27,7 @@ TODO
 *Check key
 *Improve sync
 *Open url in browser
+
+*Settings
 *Logs/Error notification
 *Clear code

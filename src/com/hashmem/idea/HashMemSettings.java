@@ -53,11 +53,12 @@ public class HashMemSettings implements Configurable {
 
     @Override
     public void apply() throws ConfigurationException {
-
+        System.out.println("apply settings");
     }
 
     @Override
     public void reset() {
+        System.out.println("reset settings");
     }
 
     @Override
