@@ -57,6 +57,13 @@ public class NotesService {
         }
     }
 
+    /**
+     * Removes all notes and sync data
+     */
+    public void reset() {
+        //todo
+    }
+
     public String getKey(VirtualFile file) {
         return fileSystem.getNoteKey(file);
     }

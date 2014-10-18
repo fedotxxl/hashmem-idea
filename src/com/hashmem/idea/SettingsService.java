@@ -4,20 +4,16 @@
  */
 package com.hashmem.idea;
 
-import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.hashmem.idea.event.SettingsChangeEvent;
-import com.intellij.openapi.application.ApplicationManager;
 import org.apache.commons.lang.StringUtils;
 
 public class SettingsService {
 
-    private EventBus eventBus;
     private HashMemSettings.Model model;
 
-    public SettingsService() {
-        HashMemSettings settings = ApplicationManager.getApplication().getComponent(HashMemSettings.class);
-        settings.onModelChange(this);
-        model = settings.getModel();
+    public SettingsService(HashMemSettings.Model model) {
+        this.model = model;
     }
 
     private static String server = "http://localhost:8080/";
@@ -42,14 +38,9 @@ public class SettingsService {
         return !StringUtils.isEmpty(getUsername());
     }
 
-    public void refresh(HashMemSettings.Model model) {
-        this.model = model;
-
-        eventBus.post(new SettingsChangeEvent());
+    @Subscribe
+    public void onSettingsChange(final SettingsChangeEvent e) {
+        model = e.getModel();
     }
 
-    //=========== SETTERS ============
-    public void setEventBus(EventBus eventBus) {
-        this.eventBus = eventBus;
-    }
 }

@@ -5,8 +5,11 @@
 package com.hashmem.idea;
 
 
+import com.google.common.eventbus.EventBus;
+import com.hashmem.idea.event.SettingsChangeEvent;
 import com.hashmem.idea.ui.HmSettingsDialog;
 import com.intellij.ide.util.PropertiesComponent;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.options.ConfigurationException;
 import org.jetbrains.annotations.Nls;
@@ -16,12 +19,14 @@ import javax.swing.*;
 
 public class HashMemSettings implements Configurable {
 
+    private NotesService notesService;
+    private EventBus eventBus;
+
     private HmSettingsDialog form = null;
     private Model model;
-    private SettingsService listener = null;
 
     public HashMemSettings() {
-        model = Model.load();
+        model = loadModel();
     }
 
     @Nls
@@ -40,7 +45,7 @@ public class HashMemSettings implements Configurable {
     @Override
     public JComponent createComponent() {
         if (form == null) {
-            form = new HmSettingsDialog();
+            form = new HmSettingsDialog(model);
         }
 
         return form.getRootComponent();
@@ -48,18 +53,29 @@ public class HashMemSettings implements Configurable {
 
     @Override
     public boolean isModified() {
-        return false;
+        return form != null;
     }
 
     @Override
     public void apply() throws ConfigurationException {
-        System.out.println("apply settings");
+        if (form == null) return;
+
+        Action formAction = form.getAppliedAction();
+        Model formModel = form.getModel();
+
+        if (formAction == Action.UNLINK_AND_RESET) {
+            notesService.reset();
+        }
+
+        if (!model.equals(formModel)) {
+            model = formModel;
+            persistModel();
+            eventBus.post(new SettingsChangeEvent(model));
+        }
     }
 
     @Override
-    public void reset() {
-        System.out.println("reset settings");
-    }
+    public void reset() {}
 
     @Override
     public void disposeUIResources() {
@@ -70,16 +86,44 @@ public class HashMemSettings implements Configurable {
         return model;
     }
 
-    public void onModelChange(SettingsService listener) {
-        this.listener = listener;
+    public void setNotesService(NotesService notesService) {
+        this.notesService = notesService;
+    }
+
+    public void setEventBus(EventBus eventBus) {
+        this.eventBus = eventBus;
+    }
+
+    private Model loadModel() {
+        String isSyncEnabled = get(Property.SYNC);
+        String username = get(Property.USERNAME);
+        String password = get(Property.PASSWORD);
+
+        return new Model("1".equals(isSyncEnabled), username, password);
+    }
+
+    private void persistModel() {
+        set(Property.SYNC, (model.isSyncEnabled()) ? "1" : "0");
+        set(Property.USERNAME, model.getUsername());
+        set(Property.PASSWORD, model.getPassword());
+    }
+
+    private static void set(Property property, String value) {
+        PropertiesComponent.getInstance().setValue(property.getField(), value);
+    }
+
+    private static String get(Property property) {
+        return PropertiesComponent.getInstance().getValue(property.getField());
     }
 
     public static class Model {
 
+        private boolean isSyncEnabled;
         private String username;
         private String password;
 
-        public Model(String username, String password) {
+        public Model(boolean isSyncEnabled, String username, String password) {
+            this.isSyncEnabled = isSyncEnabled;
             this.username = username;
             this.password = password;
         }
@@ -92,30 +136,41 @@ public class HashMemSettings implements Configurable {
             return password;
         }
 
-        private void save() {
-            set(Property.USERNAME, username);
-            set(Property.USERNAME, password);
+        public boolean isSyncEnabled() {
+            return isSyncEnabled;
         }
 
-        private static Model load() {
-            String username = get(Property.USERNAME);
-            String password = get(Property.PASSWORD);
 
-            return new Model(username, password);
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Model)) return false;
+
+            Model model = (Model) o;
+
+            if (isSyncEnabled != model.isSyncEnabled) return false;
+            if (password != null ? !password.equals(model.password) : model.password != null) return false;
+            if (username != null ? !username.equals(model.username) : model.username != null) return false;
+
+            return true;
         }
 
-        private static void set(Property property, String value) {
-            PropertiesComponent.getInstance().setValue(property.getField(), value);
+        @Override
+        public int hashCode() {
+            int result = (isSyncEnabled ? 1 : 0);
+            result = 31 * result + (username != null ? username.hashCode() : 0);
+            result = 31 * result + (password != null ? password.hashCode() : 0);
+            return result;
         }
+    }
 
-        private static String get(Property property) {
-            return PropertiesComponent.getInstance().getValue(property.getField());
-        }
+    public static enum Action {
+        UNLINK, UNLINK_AND_RESET
     }
 
     private static enum Property {
 
-        USERNAME("username"), PASSWORD("password");
+        SYNC("sync"), USERNAME("username"), PASSWORD("password");
 
         private String postfix;
 
@@ -124,7 +179,7 @@ public class HashMemSettings implements Configurable {
         }
 
         public String getField() {
-            return "hashMem." + postfix;
+            return "com.hashMem." + postfix;
         }
     }
 }

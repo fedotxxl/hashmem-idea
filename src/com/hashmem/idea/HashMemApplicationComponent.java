@@ -40,6 +40,8 @@ public class HashMemApplicationComponent implements ApplicationComponent {
     }
 
     private void startApplicationContext() {
+        HashMemSettings settings = ApplicationManager.getApplication().getComponent(HashMemSettings.class);
+
         syncService = new SyncService();
         notesService = new NotesService();
         actionProcessor = new ActionProcessor();
@@ -51,8 +53,8 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         AuthService authService = new AuthService();
         HttpService httpService = new HttpService();
         Router router = new Router();
-        SettingsService settingsService = new SettingsService();
         SyncChangeService syncChangeService = new SyncChangeService();
+        SettingsService settingsService = new SettingsService(settings.getModel());
 
         authService.setHttpService(httpService);
         authService.setRouter(router);
@@ -66,12 +68,14 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         syncService.setLog(log);
         syncService.setSyncChangeService(syncChangeService);
 
-        settingsService.setEventBus(eventBus);
         router.setSettingsService(settingsService);
         router.setAuthService(authService);
         fileSystem.setEventBus(eventBus);
         ide.setFileSystem(fileSystem);
         syncChangeService.setFileSystem(fileSystem);
+
+        settings.setEventBus(eventBus);
+        settings.setNotesService(notesService);
 
         notesService.setFileSystem(fileSystem);
         actionProcessor.setFileSystem(fileSystem);
@@ -83,6 +87,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         connection.subscribe(VirtualFileManager.VFS_CHANGES, fileSystem);
         eventBus.register(syncService);
         eventBus.register(authService);
+        eventBus.register(settingsService);
     }
 
     public SyncService getSyncService() {

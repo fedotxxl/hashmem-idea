@@ -4,32 +4,77 @@
  */
 package com.hashmem.idea.ui;
 
+import com.hashmem.idea.HashMemSettings;
+import com.intellij.ui.DocumentAdapter;
 import com.intellij.ui.JBColor;
+import org.apache.commons.lang.StringUtils;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 
 public class HmSettingsDialog {
 
+    private HmSettingsForm form;
+    private JFrame f;
+
     public static class HmSettingsForm extends JPanel {
 
-        public HmSettingsForm () {
+        private JCheckBox sync;
+        private JTextField username;
+        private JTextField password;
+        private JButton checkCredentials;
+        private JButton changeUsername;
+        private HashMemSettings.Action action = null;
+        private boolean hasUsernameOnStartup;
+
+        public HmSettingsForm (HashMemSettings.Model model) {
             super(new BorderLayout());
+
+            hasUsernameOnStartup = !StringUtils.isEmpty(model.getUsername());
+
             JPanel labelPanel = new JPanel(new GridLayout(3, 1));
             JPanel fieldPanel = new JPanel(new GridLayout(3, 1));
             add(labelPanel, BorderLayout.WEST);
             add(fieldPanel, BorderLayout.CENTER);
 
-            JCheckBox sync = new JCheckBox();
-            JLabel syncLabel = new JLabel("Sync notes", JLabel.RIGHT);
+            sync = new JCheckBox();
+            sync.setSelected(model.isSyncEnabled());
+            sync.addItemListener(new ItemListener() {
+                @Override
+                public void itemStateChanged(ItemEvent e) {
+                    updateUsernameEnabled();
+                    updatePasswordEnabled();
+                    updateCheckCredentialsEnabled();
+                    updateChangeUsernameEnabled();
+                }
+            });
 
-            JTextField username = new JTextField(16);
-            JLabel usernameLabel = new JLabel("username", JLabel.RIGHT);
 
-            JTextField password = new JPasswordField(16);
+            username = new JTextField(model.getUsername(), 16);
+            username.getDocument().addDocumentListener(new DocumentAdapter() {
+                @Override
+                protected void textChanged(DocumentEvent e) {
+                    updateCheckCredentialsEnabled();
+                }
+            });
+
+            password = new JPasswordField(model.getPassword(), 16);
             password.setFont(username.getFont());
+            password.getDocument().addDocumentListener(new DocumentAdapter() {
+                @Override
+                protected void textChanged(DocumentEvent e) {
+                    updateCheckCredentialsEnabled();
+
+                }
+            });
+
+            JLabel usernameLabel = new JLabel("username", JLabel.RIGHT);
+            JLabel syncLabel = new JLabel("Sync notes", JLabel.RIGHT);
             JLabel passwordLabel = new JLabel("password", JLabel.RIGHT);
 
             syncLabel.setLabelFor(sync);
@@ -44,7 +89,7 @@ public class HmSettingsDialog {
             labelPanel.add(passwordLabel);
 
             JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
-            JButton checkCredentials = new JButton("Check credentials");
+            checkCredentials = new JButton("Check credentials");
 
             checkCredentials.addActionListener(new ActionListener() {
                 @Override
@@ -54,13 +99,21 @@ public class HmSettingsDialog {
             });
 
             buttons.add(checkCredentials);
-            buttons.add(new JButton("Change username"));
+
+            changeUsername = new JButton("Change username");
+
+            buttons.add(changeUsername);
 
             JPanel buttonsAndMessage = new JPanel(new BorderLayout());
             buttonsAndMessage.add(buttons, BorderLayout.PAGE_START);
             buttonsAndMessage.add(getLabel("synced successfully", false), BorderLayout.PAGE_END);
 
             add(buttonsAndMessage, BorderLayout.SOUTH);
+
+            updateUsernameEnabled();
+            updatePasswordEnabled();
+            updateCheckCredentialsEnabled();
+            updateChangeUsernameEnabled();
         }
 
         private void addField(JPanel fieldPanel, Component component) {
@@ -78,24 +131,96 @@ public class HmSettingsDialog {
 
             return label;
         }
+
+        private void updateUsernameEnabled() {
+            boolean isEnabled = true;
+
+            if (hasUsernameOnStartup && action == null) {
+                isEnabled = false;
+            } else if (!isSyncEnabled()) {
+                isEnabled = false;
+            }
+
+            username.setEnabled(isEnabled);
+        }
+
+        private void updatePasswordEnabled() {
+            password.setEnabled(isSyncEnabled());
+        }
+
+        private void updateCheckCredentialsEnabled() {
+            boolean isEnabled = true;
+
+            if (!isSyncEnabled()) {
+                isEnabled = false;
+            } else if (StringUtils.isEmpty(getUsername()) || StringUtils.isEmpty(getPassword())) {
+                isEnabled = false;
+            }
+
+            checkCredentials.setEnabled(isEnabled);
+        }
+
+        private void updateChangeUsernameEnabled() {
+            boolean isEnabled = true;
+
+            if (!hasUsernameOnStartup) {
+                isEnabled = false;
+            } else if (action != null) {
+                isEnabled = false;
+            }
+
+            changeUsername.setEnabled(isEnabled);
+        }
+
+        private boolean isSyncEnabled() {
+            return sync.isSelected();
+        }
+
+        private String getUsername() {
+            return username.getText();
+        }
+
+        private String getPassword() {
+            return password.getText();
+        }
+
+        public HashMemSettings.Model getModel() {
+            return new HashMemSettings.Model(isSyncEnabled(), getUsername(), getPassword());
+        }
+
+        public HashMemSettings.Action getAppliedAction() {
+            return action;
+        }
     }
 
     public static void main(String[] args) {
         //Create and set up the window.
-        JFrame frame = new JFrame("SpringForm");
+        JFrame frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Set up the content pane.
-        frame.setContentPane(new HmSettingsForm());
+        frame.setContentPane(new HmSettingsForm(new HashMemSettings.Model(true, "qwe", "a")));
 
         //Display the window.
         frame.pack();
         frame.setVisible(true);
     }
 
+    public HmSettingsDialog(HashMemSettings.Model model) {
+        f = new JFrame();
+        form = new HmSettingsForm(model);
+        f.getContentPane().add(form, BorderLayout.NORTH);
+    }
+
     public JComponent getRootComponent() {
-        JFrame f = new JFrame();
-        f.getContentPane().add(new HmSettingsForm(), BorderLayout.NORTH);
         return f.getRootPane();
+    }
+
+    public HashMemSettings.Model getModel() {
+        return form.getModel();
+    }
+
+    public HashMemSettings.Action getAppliedAction() {
+        return form.getAppliedAction();
     }
 }
