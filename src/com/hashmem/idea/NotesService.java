@@ -30,11 +30,11 @@ public class NotesService {
     }
 
     public boolean remove(String key) {
-        return fileSystem.removeFile(key);
+        return fileSystem.removeNote(key);
     }
 
     public List<Note> getNotes() {
-        return map(fileSystem.listFiles(), new Function<String, Note>() {
+        return map(fileSystem.listNotesKeys(), new Function<String, Note>() {
             @Override
             public Note fun(String it) {
                 return new Note(it);
@@ -60,8 +60,8 @@ public class NotesService {
     /**
      * Removes all notes and sync data
      */
-    public void reset() {
-        //todo
+    public void removeAllNotes() {
+        fileSystem.removeAllNotes();
     }
 
     public String getKey(VirtualFile file) {

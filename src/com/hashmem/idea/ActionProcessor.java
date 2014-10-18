@@ -81,7 +81,7 @@ public class ActionProcessor {
 
     private boolean delete(String key) {
         if (notesService.has(key)) {
-            if (fileSystem.removeFile(key)) {
+            if (fileSystem.removeNote(key)) {
                 log.fileDeleted(key);
                 return true;
             } else {

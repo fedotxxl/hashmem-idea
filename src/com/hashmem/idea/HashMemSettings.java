@@ -19,7 +19,7 @@ import javax.swing.*;
 
 public class HashMemSettings implements Configurable {
 
-    private NotesService notesService;
+    private AccountService accountService;
     private EventBus eventBus;
 
     private HmSettingsDialog form = null;
@@ -64,7 +64,7 @@ public class HashMemSettings implements Configurable {
         Model formModel = form.getModel();
 
         if (formAction == Action.UNLINK_AND_RESET) {
-            notesService.reset();
+            accountService.reset();
         }
 
         if (!model.equals(formModel)) {
@@ -86,8 +86,8 @@ public class HashMemSettings implements Configurable {
         return model;
     }
 
-    public void setNotesService(NotesService notesService) {
-        this.notesService = notesService;
+    public void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     public void setEventBus(EventBus eventBus) {

@@ -37,6 +37,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.intellij.util.containers.ContainerUtil.findAll;
 import static com.intellij.util.containers.ContainerUtil.map;
@@ -61,6 +63,7 @@ public class FileSystem implements BulkFileListener {
 			return it != null && it.exists() && !it.isDirectory() && !isHidden(it.getName());
 		}
 	};
+    private ConcurrentMap<String, Boolean> notesToSkipChangeOrDeletedEvents = new ConcurrentHashMap<String, Boolean>();
 
     public FileSystem() {
         notesFolderPath = PathManager.getPluginsPath() + "/hm/";
@@ -70,7 +73,7 @@ public class FileSystem implements BulkFileListener {
         return virtualFileBy(HASHMEM_FOLDER);
     }
 
-	public List<String> listFiles() {
+	public List<String> listNotesKeys() {
 		VirtualFile virtualFile = getRootFolder();
 		if (virtualFile == null || !virtualFile.exists()) {
 			return Collections.emptyList();
@@ -140,11 +143,15 @@ public class FileSystem implements BulkFileListener {
         });
 	}
 
-	public boolean removeFile(final String fileName) {
-		return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
+	public boolean removeNote(String key) {
+	    return removeFile(getNoteFilePath(key));
+	}
+
+    public boolean removeFile(final String filePath) {
+        return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
             @Override
             public Boolean compute() {
-                VirtualFile virtualFile = virtualFileBy(fileName);
+                VirtualFile virtualFile = virtualFileBy(filePath, true);
                 if (virtualFile == null) return false;
 
                 try {
@@ -156,15 +163,30 @@ public class FileSystem implements BulkFileListener {
                 }
             }
         });
-	}
+    }
+
+    public void removeAllNotes() {
+        for (String key : listNotesKeys()) {
+            notesToSkipChangeOrDeletedEvents.put(key, true);
+            removeNote(key);
+        }
+    }
 
     @Nullable public VirtualFile virtualFileBy(String fileName) {
         return virtualFileBy(fileName, false);
     }
 
 	@Nullable private VirtualFile virtualFileBy(String fileName, boolean isAbsolute) {
-		return fileManager.refreshAndFindFileByUrl("file://" + ((isAbsolute) ? fileName : (notesFolderPath + fileName)));
+		return fileManager.refreshAndFindFileByUrl("file://" + ((isAbsolute) ? fileName : getFilePath(fileName)));
 	}
+
+    private String getNoteFilePath(String key) {
+        return getFilePath(key);
+    }
+
+    private String getFilePath(String fileName) {
+        return notesFolderPath + fileName;
+    }
 
 	public boolean isHashMemNote(final VirtualFile virtualFile) {
 		VirtualFile notesFolder = getRootFolder();
@@ -192,7 +214,16 @@ public class FileSystem implements BulkFileListener {
             if (e instanceof VFileDeleteEvent) {
                 VirtualFile file = e.getFile();
                 if (isHashMemNote(file)) {
-                      eventBus.post(new NoteFileDeletedEvent(getNoteKey(file), file));
+
+                    String key = getNoteKey(file);
+
+                    Boolean has = notesToSkipChangeOrDeletedEvents.get(key);
+                    if (has != null && has == true) {
+                        notesToSkipChangeOrDeletedEvents.put(key, false);
+                        return;
+                    }
+
+                    eventBus.post(new NoteFileDeletedEvent(getNoteKey(file), file));
                 }
             }
         }
@@ -203,7 +234,16 @@ public class FileSystem implements BulkFileListener {
         for (VFileEvent e : events) {
             VirtualFile file = e.getFile();
             if (isHashMemNote(file) && isChangeEvent(e)) {
-                eventBus.post(new NoteFileChangedEvent(getNoteKey(file), file));
+                String key = getNoteKey(file);
+
+                //todo improve
+                Boolean has = notesToSkipChangeOrDeletedEvents.get(key);
+                if (has != null && has == true) {
+                    notesToSkipChangeOrDeletedEvents.put(key, false);
+                    return;
+                }
+
+                eventBus.post(new NoteFileChangedEvent(key, file));
             }
         }
     }

@@ -123,6 +123,10 @@ public class SyncService {
         });
     }
 
+    public void resetSyncData() {
+        //todo
+    }
+
     private void markAsDeleted(String key, long date) {
         syncChangeService.markAsDeleted(key, date);
     }

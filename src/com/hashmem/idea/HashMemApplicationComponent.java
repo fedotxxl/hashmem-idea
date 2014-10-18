@@ -55,6 +55,10 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         Router router = new Router();
         SyncChangeService syncChangeService = new SyncChangeService();
         SettingsService settingsService = new SettingsService(settings.getModel());
+        AccountService accountService = new AccountService();
+
+        accountService.setNotesService(notesService);
+        accountService.setSyncService(syncService);
 
         authService.setHttpService(httpService);
         authService.setRouter(router);
@@ -75,7 +79,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         syncChangeService.setFileSystem(fileSystem);
 
         settings.setEventBus(eventBus);
-        settings.setNotesService(notesService);
+        settings.setAccountService(accountService);
 
         notesService.setFileSystem(fileSystem);
         actionProcessor.setFileSystem(fileSystem);
