@@ -2,9 +2,9 @@
  * Note
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
+package com.hashmem.idea.domain;
 
-import com.hashmem.idea.ui.Keyable;
+import com.hashmem.idea.utils.Validator;
 import com.intellij.openapi.util.io.StreamUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 

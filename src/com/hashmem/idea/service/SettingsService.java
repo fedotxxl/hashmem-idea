@@ -2,9 +2,10 @@
  * SettingsService
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
+package com.hashmem.idea.service;
 
 import com.google.common.eventbus.Subscribe;
+import com.hashmem.idea.HashMemSettings;
 import com.hashmem.idea.event.SettingsChangeEvent;
 import org.apache.commons.lang.StringUtils;
 

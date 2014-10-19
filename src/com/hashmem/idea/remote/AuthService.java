@@ -5,9 +5,8 @@
 package com.hashmem.idea.remote;
 
 import com.google.common.eventbus.Subscribe;
-import com.hashmem.idea.NotAuthenticatedException;
-import com.hashmem.idea.Router;
-import com.hashmem.idea.SettingsService;
+import com.hashmem.idea.service.Router;
+import com.hashmem.idea.service.SettingsService;
 import com.hashmem.idea.event.SettingsChangeEvent;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;

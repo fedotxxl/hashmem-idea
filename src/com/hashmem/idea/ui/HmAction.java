@@ -13,15 +13,11 @@ import com.intellij.openapi.project.Project;
 public class HmAction extends AnAction {
     @Override
     public void actionPerformed(AnActionEvent e) {
-        showPopup(e.getProject(), null, null);
+        showPopup(e.getProject());
     }
 
-    private void showPopup(Project project, HmModel model, HmCallback callback) {
+    private void showPopup(Project project) {
         HashMemApplicationComponent component = ApplicationManager.getApplication().getComponent(HashMemApplicationComponent.class);
         new HmPopup(project, component.getNotesService(), component.getActionProcessor()).show();
-
-//        ListPopupStep step = new BaseListPopupStep<String>("asd", new String[] { "a", "b"});
-//
-//        JBPopupFactory.getInstance().createComponentPopupBuilder(new JTextField(), null).createPopup().showCenteredInCurrentWindow(project);
     }
 }

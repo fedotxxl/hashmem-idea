@@ -2,7 +2,7 @@
  * Router
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
+package com.hashmem.idea.service;
 
 import com.hashmem.idea.remote.AuthService;
 import org.apache.http.client.utils.URIBuilder;

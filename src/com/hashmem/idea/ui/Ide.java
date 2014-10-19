@@ -4,7 +4,7 @@
  */
 package com.hashmem.idea.ui;
 
-import com.hashmem.idea.FileSystem;
+import com.hashmem.idea.service.FileSystem;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.fileTypes.PlainTextFileType;

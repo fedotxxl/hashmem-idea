@@ -2,9 +2,7 @@
  * HmCommand
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
-
-import com.hashmem.idea.ui.Keyable;
+package com.hashmem.idea.domain;
 
 public enum Command implements Keyable {
 

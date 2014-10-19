@@ -4,8 +4,10 @@
  */
 package com.hashmem.idea.ui;
 
-import com.hashmem.idea.Command;
-import com.hashmem.idea.Note;
+import com.hashmem.idea.domain.Command;
+import com.hashmem.idea.domain.Keyable;
+import com.hashmem.idea.domain.Note;
+import com.hashmem.idea.domain.Query;
 import com.hashmem.jetbrains.command.HashMemCommandPresentation;
 import com.intellij.navigation.ItemPresentation;
 import com.intellij.navigation.NavigationItem;

@@ -2,7 +2,7 @@
  * Query
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea.ui;
+package com.hashmem.idea.domain;
 
 public class Query {
     private String prefix;

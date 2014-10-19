@@ -5,10 +5,11 @@
 package com.hashmem.idea.ui;
 
 import com.google.common.collect.Lists;
-import com.hashmem.idea.ActionProcessor;
-import com.hashmem.idea.Command;
-import com.hashmem.idea.Note;
-import com.hashmem.idea.NotesService;
+import com.hashmem.idea.domain.Query;
+import com.hashmem.idea.service.ActionProcessor;
+import com.hashmem.idea.domain.Command;
+import com.hashmem.idea.domain.Note;
+import com.hashmem.idea.service.NotesService;
 import com.hashmem.jetbrains.HashMemItemProvider;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.ide.actions.GotoActionBase;

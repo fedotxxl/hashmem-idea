@@ -5,6 +5,7 @@ import com.hashmem.idea.remote.AuthService;
 import com.hashmem.idea.remote.HttpService;
 import com.hashmem.idea.remote.SyncChangeService;
 import com.hashmem.idea.remote.SyncService;
+import com.hashmem.idea.service.*;
 import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.ui.Ide;
 import com.intellij.openapi.application.ApplicationManager;

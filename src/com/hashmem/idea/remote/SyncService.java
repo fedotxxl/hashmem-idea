@@ -8,10 +8,13 @@ import com.google.common.collect.Lists;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.hashmem.NoteToSync;
-import com.hashmem.idea.*;
+import com.hashmem.idea.domain.SyncNote;
+import com.hashmem.idea.domain.Note;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
+import com.hashmem.idea.service.NotesService;
+import com.hashmem.idea.service.Router;
+import com.hashmem.idea.service.SettingsService;
 import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.utils.Callback;
 import com.hashmem.idea.utils.Debouncer;
@@ -61,9 +64,9 @@ public class SyncService {
             return o != null;
         }
     };
-    private static final Condition DELETED_ONLY_CONDITION = new Condition<NoteToSync>() {
+    private static final Condition DELETED_ONLY_CONDITION = new Condition<SyncNote>() {
         @Override
-        public boolean value(NoteToSync o) {
+        public boolean value(SyncNote o) {
             return o.isDeleted();
         }
     };
@@ -87,8 +90,8 @@ public class SyncService {
                     syncing = true;
 
                     long synced = System.currentTimeMillis();
-                    Collection<NoteToSync> notesToServer = getNotesToSync(since);
-                    Collection<NoteToSync> notesFromServer = pushNotes(since, notesToServer);
+                    Collection<SyncNote> notesToServer = getNotesToSync(since);
+                    Collection<SyncNote> notesFromServer = pushNotes(since, notesToServer);
                     saveChangedNotes(notesFromServer, synced, notesToServer);
                     lastSync = synced;
                 } catch (NotAuthenticatedException nae) {
@@ -141,7 +144,7 @@ public class SyncService {
         syncChangeService.forgetAll();
     }
 
-    private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced, final Collection<NoteToSync> notesToServer) {
+    private void saveChangedNotes(final Collection<SyncNote> notes, final long synced, final Collection<SyncNote> notesToServer) {
         final SyncResult result = new SyncResult(notesToServer.size());
 
         syncChangeService.forget(filter(notesToServer, DELETED_ONLY_CONDITION));
@@ -152,7 +155,7 @@ public class SyncService {
             ApplicationManager.getApplication().runWriteAction(new Runnable() {
                 @Override
                 public void run() {
-                    for (NoteToSync note : notes) {
+                    for (SyncNote note : notes) {
                         SyncChangeResult change = saveNoteFromServer(note, synced);
                         result.increase(change);
                     }
@@ -163,7 +166,7 @@ public class SyncService {
         }
     }
 
-    private SyncChangeResult saveNoteFromServer(NoteToSync note, long synced) {
+    private SyncChangeResult saveNoteFromServer(SyncNote note, long synced) {
         SyncChangeResult answer;
         String key = note.getKey();
 
@@ -198,18 +201,18 @@ public class SyncService {
         return answer;
     }
 
-    private Collection<NoteToSync> getNotesToSync(long since) {
-        Collection<NoteToSync> answer = Lists.newArrayList();
+    private Collection<SyncNote> getNotesToSync(long since) {
+        Collection<SyncNote> answer = Lists.newArrayList();
 
-        answer.addAll(filter(map(syncChangeService.getUpdatedSince(since), new Function<String, NoteToSync>() {
+        answer.addAll(filter(map(syncChangeService.getUpdatedSince(since), new Function<String, SyncNote>() {
             @Override
-            public NoteToSync fun(String key) {
+            public SyncNote fun(String key) {
                 return getNoteToSync(key, syncChangeService.getLastUpdated(key), false);
             }
         }), NOT_NULL_CONDITION));
-        answer.addAll(filter(map(syncChangeService.getDeletedSince(since), new Function<String, NoteToSync>() {
+        answer.addAll(filter(map(syncChangeService.getDeletedSince(since), new Function<String, SyncNote>() {
             @Override
-            public NoteToSync fun(String key) {
+            public SyncNote fun(String key) {
                 return getNoteToSync(key, syncChangeService.getLastUpdated(key), true);
             }
         }), NOT_NULL_CONDITION));
@@ -217,7 +220,7 @@ public class SyncService {
         return answer;
     }
 
-    private Collection<NoteToSync> pushNotes(long lastSync, final Collection<NoteToSync> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
+    private Collection<SyncNote> pushNotes(long lastSync, final Collection<SyncNote> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
         long now = System.currentTimeMillis();
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("now", now);
@@ -230,8 +233,8 @@ public class SyncService {
         Integer status = response.getStatusLine().getStatusCode();
 
         if (status == 200) {
-            Type collectionType = new TypeToken<List<NoteToSync>>(){}.getType();
-            List<NoteToSync> notesFromServer = new Gson().fromJson(IOUtils.toString(response.getEntity().getContent(), "UTF-8"), collectionType);
+            Type collectionType = new TypeToken<List<SyncNote>>(){}.getType();
+            List<SyncNote> notesFromServer = new Gson().fromJson(IOUtils.toString(response.getEntity().getContent(), "UTF-8"), collectionType);
             return notesFromServer;
         } else if (status == 401) {
             throw new NotAuthenticatedException();
@@ -244,17 +247,17 @@ public class SyncService {
         return httpService.post(router.getSync(token), new Gson().toJson(data));
     }
 
-    private NoteToSync getNoteToSync(String key, long lastUpdated, boolean isDeleted) {
-        NoteToSync answer = null;
+    private SyncNote getNoteToSync(String key, long lastUpdated, boolean isDeleted) {
+        SyncNote answer = null;
 
         if (isDeleted) {
-            return NoteToSync.newDeletedNote(key, lastUpdated);
+            return SyncNote.newDeletedNote(key, lastUpdated);
         } else {
             Note note = notesService.getNote(key);
             if (note == null) {
                 //todo
             } else {
-                answer = new NoteToSync(note, lastUpdated);
+                answer = new SyncNote(note, lastUpdated);
             }
         }
 

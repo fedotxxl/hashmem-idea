@@ -2,9 +2,10 @@
  * NoteService
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
+package com.hashmem.idea.service;
 
-import com.hashmem.NoteToSync;
+import com.hashmem.idea.domain.SyncNote;
+import com.hashmem.idea.domain.Note;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.Function;
 import org.apache.commons.lang.StringUtils;
@@ -21,12 +22,12 @@ public class NotesService {
 
     private FileSystem fileSystem;
 
-    public void save(NoteToSync note) {
-        fileSystem.createFile(note.getKey(), note.getContent());
+    public void save(SyncNote note) {
+        fileSystem.createNoteFile(note.getKey(), note.getContent());
     }
 
     public boolean has(String key) {
-        return fileSystem.noteFileExists(key);
+        return fileSystem.isNoteFileExists(key);
     }
 
     public boolean remove(String key) {

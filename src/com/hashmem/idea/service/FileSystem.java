@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.hashmem.idea;
+package com.hashmem.idea.service;
 
 import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.event.NoteFileChangedEvent;
@@ -85,33 +85,12 @@ public class FileSystem implements BulkFileListener {
         });
 	}
 
-	public boolean noteFileExists(String fileName) {
-		return canBeNote.value(virtualFileBy(fileName));
+	public boolean isNoteFileExists(String key) {
+		return canBeNote.value(virtualFileBy(key));
 	}
 
-	public boolean renameFile(String oldFileName, final String newFileName) {
-		final VirtualFile virtualFile = virtualFileBy(oldFileName);
-		if (virtualFile == null) return false;
-
-		return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
-			@Override public Boolean compute() {
-				try {
-					virtualFile.rename(this, newFileName);
-					return true;
-				} catch (IOException e) {
-					LOG.warn(e);
-					return false;
-				}
-			}
-		});
-	}
-
-	public boolean createEmptyFile(String fileName) {
-		return createFile(fileName, "");
-	}
-
-    public boolean createFile(final String fileName, final String text) {
-        return createFile(fileName, text, notesFolderPath);
+    public boolean createNoteFile(String key, final String text) {
+        return createFile(key, text, notesFolderPath);
     }
 
     private boolean createFile(final String fileName, final String text, final String path) {
@@ -187,7 +166,7 @@ public class FileSystem implements BulkFileListener {
         return notesFolderPath + fileName;
     }
 
-	public boolean isHashMemNote(final VirtualFile virtualFile) {
+	public boolean isNote(final VirtualFile virtualFile) {
 		VirtualFile notesFolder = getRootFolder();
 		return notesFolder != null && !isHidden(virtualFile.getName()) && ContainerUtil.exists(notesFolder.getChildren(), new Condition<VirtualFile>() {
             @Override
@@ -212,7 +191,7 @@ public class FileSystem implements BulkFileListener {
         for (VFileEvent e : events) {
             if (e instanceof VFileDeleteEvent) {
                 VirtualFile file = e.getFile();
-                if (isHashMemNote(file)) {
+                if (isNote(file)) {
 
                     String key = getNoteKey(file);
 
@@ -228,7 +207,7 @@ public class FileSystem implements BulkFileListener {
     public void after(@NotNull List<? extends VFileEvent> events) {
         for (VFileEvent e : events) {
             VirtualFile file = e.getFile();
-            if (isHashMemNote(file) && isChangeEvent(e)) {
+            if (isNote(file) && isChangeEvent(e)) {
                 String key = getNoteKey(file);
 
                 if (!notesToSkipChangeOrDeletedEvents.checkContainsAndRemove(key)) {
@@ -257,7 +236,7 @@ public class FileSystem implements BulkFileListener {
     }
 
     private VirtualFile createSupportFile(String fileName, String content) {
-        boolean created = createFile(fileName, content);
+        boolean created = createFile(fileName, content, notesFolderPath);
 
         if (!created) {
             throw new IllegalStateException("Unable to create file " + fileName + " with content " + content);

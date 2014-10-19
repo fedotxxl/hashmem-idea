@@ -2,7 +2,7 @@
  * Validator
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
+package com.hashmem.idea.utils;
 
 import org.apache.commons.lang.StringUtils;
 

@@ -5,8 +5,8 @@
 package com.hashmem.idea.remote;
 
 import com.google.gson.Gson;
-import com.hashmem.NoteToSync;
-import com.hashmem.idea.FileSystem;
+import com.hashmem.idea.domain.SyncNote;
+import com.hashmem.idea.service.FileSystem;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.util.Computable;
 
@@ -38,10 +38,10 @@ public class SyncChangeService {
         saveSyncChangeData();
     }
 
-    public void forget(Collection<NoteToSync> notes) {
+    public void forget(Collection<SyncNote> notes) {
         SyncChangeData data = getSyncChangeData();
 
-        for (NoteToSync note : notes) {
+        for (SyncNote note : notes) {
             data.forget(note.getKey());
         }
 

@@ -2,12 +2,15 @@
  * HmActionProcessor
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea;
+package com.hashmem.idea.service;
 
+import com.hashmem.idea.HashMemSettings;
+import com.hashmem.idea.domain.Note;
+import com.hashmem.idea.domain.Command;
 import com.hashmem.idea.remote.SyncService;
 import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.ui.Ide;
-import com.hashmem.idea.ui.Query;
+import com.hashmem.idea.domain.Query;
 import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 
@@ -70,7 +73,7 @@ public class ActionProcessor {
 
     private boolean create(String key, Project project) {
         if (!notesService.has(key)) {
-            if (!fileSystem.createFile(key, "")) {
+            if (!fileSystem.createNoteFile(key, "")) {
                 ide.getLog().canNotCreateFile(key);
                 return false;
             }
