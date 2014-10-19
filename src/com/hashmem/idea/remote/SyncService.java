@@ -15,6 +15,7 @@ import com.hashmem.idea.event.NoteFileDeletedEvent;
 import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.utils.Callback;
 import com.hashmem.idea.utils.Debouncer;
+import com.hashmem.idea.utils.OneTimeContainer;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -31,8 +32,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static com.intellij.util.containers.ContainerUtil.filter;
 import static com.intellij.util.containers.ContainerUtil.map;
@@ -47,7 +46,7 @@ public class SyncService {
     private SyncChangeService syncChangeService;
     private Router router;
     private volatile boolean syncing = false;
-    private ConcurrentMap<String, Boolean> notesToSkipChangeOrDeletedEvents = new ConcurrentHashMap<String, Boolean>();
+    private OneTimeContainer<String> notesToSkipChangeOrDeletedEvents = new OneTimeContainer<String>();
 
     private Debouncer<SyncParams> sync = new Debouncer<SyncParams>(2000, new Callback<SyncParams>() {
         @Override
@@ -63,7 +62,7 @@ public class SyncService {
         }
     };
 
-    private long lastSync = 0l; //todo rememer
+    private long lastSync = 0l;
 
     public void setSettingsService(SettingsService settingsService) {
         this.settingsService = settingsService;
@@ -131,7 +130,7 @@ public class SyncService {
     }
 
     public void resetSyncData() {
-        //todo
+        syncChangeService.forgetAll();
     }
 
     private void markAsDeleted(String key, long date) {
@@ -261,16 +260,11 @@ public class SyncService {
     }
 
     private void skipNextChangeOrDeletedEvent(String key) {
-        notesToSkipChangeOrDeletedEvents.put(key, true);
+        notesToSkipChangeOrDeletedEvents.put(key);
     }
 
     private void doOrSkipEventOnce(String key, Runnable runnable) {
-        Boolean answer = notesToSkipChangeOrDeletedEvents.get(key);
-        if (answer != null && answer.equals(true)) {
-            notesToSkipChangeOrDeletedEvents.put(key, false);
-        } else {
-            runnable.run();
-        }
+        notesToSkipChangeOrDeletedEvents.checkAndDo(key, false, runnable);
     }
 
     @Subscribe

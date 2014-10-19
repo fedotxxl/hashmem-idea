@@ -48,6 +48,11 @@ public class SyncChangeService {
         saveSyncChangeData();
     }
 
+    public void forgetAll() {
+        getSyncChangeData().forgetAll();
+        saveSyncChangeData();
+    }
+
     List<String> getUpdatedSince(long since) {
         return getSyncChangeData().getUpdatedSince(since);
     }

@@ -17,6 +17,7 @@ package com.hashmem.idea;
 import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
+import com.hashmem.idea.utils.OneTimeContainer;
 import com.intellij.CommonBundle;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.PathManager;
@@ -37,8 +38,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import static com.intellij.util.containers.ContainerUtil.findAll;
 import static com.intellij.util.containers.ContainerUtil.map;
@@ -63,7 +62,7 @@ public class FileSystem implements BulkFileListener {
 			return it != null && it.exists() && !it.isDirectory() && !isHidden(it.getName());
 		}
 	};
-    private ConcurrentMap<String, Boolean> notesToSkipChangeOrDeletedEvents = new ConcurrentHashMap<String, Boolean>();
+    private OneTimeContainer<String> notesToSkipChangeOrDeletedEvents = new OneTimeContainer<String>();
 
     public FileSystem() {
         notesFolderPath = PathManager.getPluginsPath() + "/hm/";
@@ -167,7 +166,7 @@ public class FileSystem implements BulkFileListener {
 
     public void removeAllNotes() {
         for (String key : listNotesKeys()) {
-            notesToSkipChangeOrDeletedEvents.put(key, true);
+            notesToSkipChangeOrDeletedEvents.put(key);
             removeNote(key);
         }
     }
@@ -217,13 +216,9 @@ public class FileSystem implements BulkFileListener {
 
                     String key = getNoteKey(file);
 
-                    Boolean has = notesToSkipChangeOrDeletedEvents.get(key);
-                    if (has != null && has == true) {
-                        notesToSkipChangeOrDeletedEvents.put(key, false);
-                        return;
+                    if (!notesToSkipChangeOrDeletedEvents.checkContainsAndRemove(key)) {
+                        eventBus.post(new NoteFileDeletedEvent(key, file));
                     }
-
-                    eventBus.post(new NoteFileDeletedEvent(getNoteKey(file), file));
                 }
             }
         }
@@ -236,14 +231,9 @@ public class FileSystem implements BulkFileListener {
             if (isHashMemNote(file) && isChangeEvent(e)) {
                 String key = getNoteKey(file);
 
-                //todo improve
-                Boolean has = notesToSkipChangeOrDeletedEvents.get(key);
-                if (has != null && has == true) {
-                    notesToSkipChangeOrDeletedEvents.put(key, false);
-                    return;
+                if (!notesToSkipChangeOrDeletedEvents.checkContainsAndRemove(key)) {
+                    eventBus.post(new NoteFileChangedEvent(key, file));
                 }
-
-                eventBus.post(new NoteFileChangedEvent(key, file));
             }
         }
     }

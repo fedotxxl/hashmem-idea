@@ -30,6 +30,11 @@ public class SyncChangeData {
         deleted.remove(key);
     }
 
+    void forgetAll() {
+        deleted = Maps.newHashMap();
+        updated = Maps.newHashMap();
+    }
+
     List<String> getUpdatedSince(long since) {
         return getSince(updated, since);
     }
