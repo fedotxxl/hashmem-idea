@@ -31,7 +31,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         startApplicationContext();
 
         //sync on start
-        syncService.syncLater();
+        syncService.syncOnChange();
     }
 
     @Override

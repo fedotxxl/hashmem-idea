@@ -106,7 +106,7 @@ public class ActionProcessor {
             ShowSettingsUtil.getInstance().showSettingsDialog(project, HashMemSettings.class);
             return true;
         } else if (command == Command.SYNC) {
-            syncService.forceSyncAll();
+            syncService.syncAllNow();
             return true;
         } else if (command == Command.HELP) {
             ide.openBrowser(router.getHelp());

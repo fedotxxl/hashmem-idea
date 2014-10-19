@@ -13,6 +13,6 @@ public class HmSyncAction extends AnAction {
 
     @Override
     public void actionPerformed(AnActionEvent e) {
-        ApplicationManager.getApplication().getComponent(HashMemApplicationComponent.class).getSyncService().forceSyncAll();
+        ApplicationManager.getApplication().getComponent(HashMemApplicationComponent.class).getSyncService().syncAllNow();
     }
 }

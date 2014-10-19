@@ -46,12 +46,12 @@ public class SyncService {
     private SyncChangeService syncChangeService;
     private Router router;
     private volatile boolean syncing = false;
+    private long lastSync = 0l;
     private OneTimeContainer<String> notesToSkipChangeOrDeletedEvents = new OneTimeContainer<String>();
-
-    private Debouncer<SyncParams> sync = new Debouncer<SyncParams>(2000, new Callback<SyncParams>() {
+    private Debouncer<Object> syncOnChangeDebouncer = new Debouncer<Object>(5000, new Callback<Object>() {
         @Override
-        public void call(SyncParams arg) {
-            doSync(arg.getSince(), arg.isForceSync());
+        public void call(Object arg) {
+            doSync(false);
         }
     });
 
@@ -61,26 +61,14 @@ public class SyncService {
             return o != null;
         }
     };
+    private static final Condition DELETED_ONLY_CONDITION = new Condition<NoteToSync>() {
+        @Override
+        public boolean value(NoteToSync o) {
+            return o.isDeleted();
+        }
+    };
 
-    private long lastSync = 0l;
-
-    public void setSettingsService(SettingsService settingsService) {
-        this.settingsService = settingsService;
-    }
-
-    public synchronized void forceSyncAll() {
-        sync(0l, true);
-    }
-
-    private synchronized void sync() {
-        sync(lastSync, false);
-    }
-
-    private synchronized void sync(long since, boolean isForceSync) {
-        sync.call(new SyncParams(since, isForceSync));
-    }
-
-    private synchronized void doSync(final long since, boolean isForceSync) {
+    private synchronized void doSync(boolean isForceSync) {
         if (syncing || !settingsService.isSyncEnabled()) {
 
             if (isForceSync) {
@@ -89,6 +77,8 @@ public class SyncService {
 
             return;
         }
+
+        final long since = (isForceSync) ? 0l : lastSync;
 
         ApplicationManager.getApplication().invokeLater(new Runnable() {
             @Override
@@ -117,12 +107,30 @@ public class SyncService {
         });
     }
 
-    public void syncLater() {
+    public void syncAllNow() {
+        syncBackground(new Runnable() {
+            @Override
+            public void run() {
+                doSync(true);
+            }
+        });
+    }
+
+    public void syncOnChange() {
+        syncBackground(new Runnable() {
+            @Override
+            public void run() {
+                syncOnChangeDebouncer.call(Boolean.TRUE);
+            }
+        });
+    }
+
+    private void syncBackground(final Runnable runnable) {
         ProgressManager.getInstance().run(new Task.Backgroundable(null, "Syncing hashMem.com notes") {
             public void run(@NotNull ProgressIndicator progressIndicator) {
                 progressIndicator.setFraction(0.10);
 
-                sync();
+                runnable.run();
 
                 progressIndicator.setFraction(1.0);
             }
@@ -133,18 +141,10 @@ public class SyncService {
         syncChangeService.forgetAll();
     }
 
-    private void markAsDeleted(String key, long date) {
-        syncChangeService.markAsDeleted(key, date);
-    }
-
-    private void markAsUpdated(String key, long date) {
-        syncChangeService.markAsUpdated(key, date);
-    }
-
     private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced, final Collection<NoteToSync> notesToServer) {
         final SyncResult result = new SyncResult(notesToServer.size());
 
-        syncChangeService.forget(notesToServer);
+        syncChangeService.forget(filter(notesToServer, DELETED_ONLY_CONDITION));
 
         if (notes == null || notes.size() == 0) {
             log.syncResult(result);
@@ -187,9 +187,11 @@ public class SyncService {
 
         if (answer == SyncChangeResult.DELETED) {
             skipNextChangeOrDeletedEvent(key);
+            syncChangeService.forget(key);
             notesService.remove(key);
         } else if (answer == SyncChangeResult.CREATED || answer == SyncChangeResult.UPDATED) {
             skipNextChangeOrDeletedEvent(key);
+            syncChangeService.markAsUpdated(key, note.getLastUpdated());
             notesService.save(note);
         }
 
@@ -272,8 +274,8 @@ public class SyncService {
         doOrSkipEventOnce(e.getKey(), new Runnable() {
             @Override
             public void run() {
-                markAsDeleted(e.getKey(), System.currentTimeMillis());
-                syncLater();
+                syncChangeService.markAsDeleted(e.getKey(), System.currentTimeMillis());
+                syncOnChange();
             }
         });
     }
@@ -283,8 +285,8 @@ public class SyncService {
         doOrSkipEventOnce(e.getKey(), new Runnable() {
             @Override
             public void run() {
-                markAsUpdated(e.getKey(), System.currentTimeMillis());
-                syncLater();
+                syncChangeService.markAsUpdated(e.getKey(), System.currentTimeMillis());
+                syncOnChange();
             }
         });
     }
@@ -422,4 +424,9 @@ public class SyncService {
     public void setSyncChangeService(SyncChangeService syncChangeService) {
         this.syncChangeService = syncChangeService;
     }
+
+    public void setSettingsService(SettingsService settingsService) {
+        this.settingsService = settingsService;
+    }
+
 }

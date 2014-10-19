@@ -48,6 +48,11 @@ public class SyncChangeService {
         saveSyncChangeData();
     }
 
+    public void forget(String key) {
+        getSyncChangeData().forget(key);
+        saveSyncChangeData();
+    }
+
     public void forgetAll() {
         getSyncChangeData().forgetAll();
         saveSyncChangeData();
