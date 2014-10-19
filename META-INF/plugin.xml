@@ -1,17 +1,15 @@
 <idea-plugin version="2">
-  <id>com.yourcompany.unique.plugin.id</id>
-  <name>hashMem</name>
+  <id>com.hashmem.idea</id>
+  <name>hashMem.com</name>
   <version>1.0</version>
-  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+  <vendor email="support@hashmem.com" url="https://hashMem.com">hashMem.com</vendor>
 
   <description><![CDATA[
-      Enter short description for your plugin here.<br>
-      <em>most HTML tags may be used</em>
+      Use Intellij style to store your data!<br>
+      Sync your notes with hashMem.com
     ]]></description>
 
   <change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
     ]]>
   </change-notes>
 
@@ -43,14 +41,7 @@
   </project-components>
 
   <actions>
-    <!-- Add your actions here -->
-      <action id="HashMemDialog" class="com.hashmem.jetbrains.HashMemDialog" text="HashMemDialog">
-          <add-to-group group-id="ToolsMenu" anchor="first"/>
-      </action>
       <action id="HmDialog" class="com.hashmem.idea.ui.HmAction" text="HmDialog">
-          <add-to-group group-id="ToolsMenu" anchor="first"/>
-      </action>
-      <action id="HmSync" class="com.hashmem.idea.ui.HmSyncAction" text="HmSync">
           <add-to-group group-id="ToolsMenu" anchor="first"/>
       </action>
   </actions>

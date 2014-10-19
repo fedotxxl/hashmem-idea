@@ -10,7 +10,6 @@ import com.hashmem.idea.service.ActionProcessor;
 import com.hashmem.idea.domain.Command;
 import com.hashmem.idea.domain.Note;
 import com.hashmem.idea.service.NotesService;
-import com.hashmem.jetbrains.HashMemItemProvider;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.ide.actions.GotoActionBase;
 import com.intellij.ide.util.gotoByName.ChooseByNameItemProvider;
@@ -84,7 +83,7 @@ public class HmPopup {
 
     public HmPopup(Project myProject, NotesService notesService, ActionProcessor actionProcessor) {
         this.myProject = myProject;
-        this.myProvider = new HashMemItemProvider(GotoActionBase.getPsiContext(myProject));
+        this.myProvider = new HmItemProvider(GotoActionBase.getPsiContext(myProject));
         this.notesService = notesService;
         this.actionProcessor = actionProcessor;
         myList.setCellRenderer(listCellRenderer);

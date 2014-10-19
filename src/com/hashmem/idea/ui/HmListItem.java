@@ -8,7 +8,6 @@ import com.hashmem.idea.domain.Command;
 import com.hashmem.idea.domain.Keyable;
 import com.hashmem.idea.domain.Note;
 import com.hashmem.idea.domain.Query;
-import com.hashmem.jetbrains.command.HashMemCommandPresentation;
 import com.intellij.navigation.ItemPresentation;
 import com.intellij.navigation.NavigationItem;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +38,7 @@ public class HmListItem implements NavigationItem {
     @Nullable
     @Override
     public ItemPresentation getPresentation() {
-        return HashMemCommandPresentation.INSTANCE;
+        return HmCommandPresentation.INSTANCE;
     }
 
     @Override

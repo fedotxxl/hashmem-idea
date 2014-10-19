@@ -2,16 +2,16 @@
  * HashMemCommandPresentation
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.jetbrains.command;
+package com.hashmem.idea.ui;
 
 import com.intellij.navigation.ItemPresentation;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 
-public class HashMemCommandPresentation implements ItemPresentation {
+public class HmCommandPresentation implements ItemPresentation {
 
-    public static HashMemCommandPresentation INSTANCE = new HashMemCommandPresentation();
+    public static HmCommandPresentation INSTANCE = new HmCommandPresentation();
 
     @Nullable
     @Override
