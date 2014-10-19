@@ -5,6 +5,7 @@
 package com.hashmem.idea.ui;
 
 import com.hashmem.idea.HashMemSettings;
+import com.hashmem.idea.remote.AuthService;
 import com.intellij.ui.DocumentAdapter;
 import com.intellij.ui.JBColor;
 import org.apache.commons.lang.StringUtils;
@@ -16,6 +17,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class HmSettingsDialog {
 
@@ -24,15 +27,17 @@ public class HmSettingsDialog {
 
     public static class HmSettingsForm extends JPanel {
 
+        private SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
         private JCheckBox sync;
         private JTextField username;
         private JTextField password;
         private JButton checkCredentials;
         private JButton changeUsername;
+        private JLabel notification;
         private HashMemSettings.Action action = null;
         private boolean hasUsernameOnStartup;
 
-        public HmSettingsForm (HashMemSettings.Model model) {
+        public HmSettingsForm (HashMemSettings.Model model, final AuthService authService) {
             super(new BorderLayout());
 
             final HmSettingsForm _this = this;
@@ -95,7 +100,16 @@ public class HmSettingsDialog {
             checkCredentials.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    new HmLog().unknownCommand("asd");
+                    AuthService.Result result = authService.tryAuthenticate(getUsername(), getPassword());
+                    if (result == AuthService.Result.SUCCESS) {
+                        displayInfoMessage("Successfully logged in");
+                    } else if (result == AuthService.Result.NOT_AUTHENTICATED) {
+                        displayWarnMessage("Unable to authenticate. Is username/password correct?");
+                    } else if (result == AuthService.Result.IO_EXCEPTION) {
+                        displayWarnMessage("Unable to connect to hashMem.com.");
+                    } else {
+                        displayWarnMessage("Unknown problem");
+                    }
                 }
             });
 
@@ -128,7 +142,12 @@ public class HmSettingsDialog {
 
             JPanel buttonsAndMessage = new JPanel(new BorderLayout());
             buttonsAndMessage.add(buttons, BorderLayout.PAGE_START);
-            buttonsAndMessage.add(getLabel("synced successfully", false), BorderLayout.PAGE_END);
+
+            notification = new JLabel();
+            Font font = notification.getFont();
+            notification.setFont(new Font(font.getFontName(), Font.BOLD, font.getSize()));
+            notification.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
+            buttonsAndMessage.add(notification, BorderLayout.PAGE_END);
 
             add(buttonsAndMessage, BorderLayout.SOUTH);
 
@@ -144,14 +163,18 @@ public class HmSettingsDialog {
             fieldPanel.add(p);
         }
 
-        private JLabel getLabel(String text, boolean warn) {
-            JLabel label = new JLabel(text);
-            Font font = label.getFont();
-            label.setFont(new Font(font.getFontName(), Font.BOLD, font.getSize()));
-            label.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
-            label.setForeground((warn) ? JBColor.RED : new Color(98, 150, 85));
+        private void displayInfoMessage(String text) {
+            setMessage(text);
+            notification.setForeground(new Color(98, 150, 85));
+        }
 
-            return label;
+        private void displayWarnMessage(String text) {
+            setMessage(text);
+            notification.setForeground(JBColor.RED);
+        }
+
+        private void setMessage(String message) {
+            notification.setText(dateFormat.format(new Date()) + ": " + message);
         }
 
         private void updateUsernameEnabled() {
@@ -215,22 +238,9 @@ public class HmSettingsDialog {
         }
     }
 
-    public static void main(String[] args) {
-        //Create and set up the window.
-        JFrame frame = new JFrame();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        //Set up the content pane.
-        frame.setContentPane(new HmSettingsForm(new HashMemSettings.Model(true, "qwe", "a")));
-
-        //Display the window.
-        frame.pack();
-        frame.setVisible(true);
-    }
-
-    public HmSettingsDialog(HashMemSettings.Model model) {
+    public HmSettingsDialog(HashMemSettings.Model model, AuthService authService) {
         f = new JFrame();
-        form = new HmSettingsForm(model);
+        form = new HmSettingsForm(model, authService);
         f.getContentPane().add(form, BorderLayout.NORTH);
     }
 

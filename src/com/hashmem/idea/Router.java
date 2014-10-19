@@ -21,13 +21,17 @@ public class Router {
     }
 
     public String getAuth() {
+        return getAuth(settingsService.getUsername(), settingsService.getPassword());
+    }
+
+    public String getAuth(final String username, final String password) {
         return getUrl("api/v1/auth", new UrlConstructor() {
             @Override
             public void construct(URIBuilder builder) {
                 builder
                         .addParameter("applicationId", settingsService.getApplicationId())
-                        .addParameter("username", settingsService.getUsername())
-                        .addParameter("password", settingsService.getPassword());
+                        .addParameter("username", username)
+                        .addParameter("password", password);
             }
         }).toString();
     }

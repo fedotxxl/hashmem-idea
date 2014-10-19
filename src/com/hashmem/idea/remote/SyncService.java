@@ -81,7 +81,7 @@ public class SyncService {
         sync.call(new SyncParams(since, isForceSync));
     }
 
-    private synchronized void doSync(long since, boolean isForceSync) {
+    private synchronized void doSync(final long since, boolean isForceSync) {
         if (syncing || !settingsService.isSyncEnabled()) {
 
             if (isForceSync) {
@@ -91,24 +91,31 @@ public class SyncService {
             return;
         }
 
-        try {
-            syncing = true;
+        ApplicationManager.getApplication().invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    syncing = true;
 
-            long synced = System.currentTimeMillis();
-            Collection<NoteToSync> notesToServer = getNotesToSync(since);
-            Collection<NoteToSync> notesFromServer = pushNotes(since, notesToServer);
-            saveChangedNotes(notesFromServer, synced, notesToServer);
-            lastSync = synced;
-        } catch (NotAuthenticatedException nae) {
-            log.failedToSyncIncorrectUsernameOrPassword();
-        } catch (UnknownSyncException use) {
-            log.failedToSyncUnknownResponse(use.getStatusCode());
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.failedToSyncUnknownException();
-        } finally {
-            syncing = false;
-        }
+                    long synced = System.currentTimeMillis();
+                    Collection<NoteToSync> notesToServer = getNotesToSync(since);
+                    Collection<NoteToSync> notesFromServer = pushNotes(since, notesToServer);
+                    saveChangedNotes(notesFromServer, synced, notesToServer);
+                    lastSync = synced;
+                } catch (NotAuthenticatedException nae) {
+                    log.failedToSyncIncorrectUsernameOrPassword();
+                } catch (UnknownSyncException use) {
+                    log.failedToSyncUnknownResponse(use.getStatusCode());
+                } catch (IOException io) {
+                    log.failedToSyncIoException();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    log.failedToSyncUnknownException();
+                } finally {
+                    syncing = false;
+                }
+            }
+        });
     }
 
     public void syncLater() {
@@ -138,28 +145,23 @@ public class SyncService {
     private void saveChangedNotes(final Collection<NoteToSync> notes, final long synced, final Collection<NoteToSync> notesToServer) {
         final SyncResult result = new SyncResult(notesToServer.size());
 
-        ApplicationManager.getApplication().invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                syncChangeService.forget(notesToServer);
+        syncChangeService.forget(notesToServer);
 
-                if (notes == null || notes.size() == 0) {
+        if (notes == null || notes.size() == 0) {
+            log.syncResult(result);
+        } else {
+            ApplicationManager.getApplication().runWriteAction(new Runnable() {
+                @Override
+                public void run() {
+                    for (NoteToSync note : notes) {
+                        SyncChangeResult change = saveNoteFromServer(note, synced);
+                        result.increase(change);
+                    }
+
                     log.syncResult(result);
-                } else {
-                    ApplicationManager.getApplication().runWriteAction(new Runnable() {
-                        @Override
-                        public void run() {
-                            for (NoteToSync note : notes) {
-                                SyncChangeResult change = saveNoteFromServer(note, synced);
-                                result.increase(change);
-                            }
-
-                            log.syncResult(result);
-                        }
-                    });
                 }
-            }
-        });
+            });
+        }
     }
 
     private SyncChangeResult saveNoteFromServer(NoteToSync note, long synced) {

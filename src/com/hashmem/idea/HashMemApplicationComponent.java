@@ -80,6 +80,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
 
         settings.setEventBus(eventBus);
         settings.setAccountService(accountService);
+        settings.setAuthService(authService);
 
         notesService.setFileSystem(fileSystem);
         actionProcessor.setFileSystem(fileSystem);

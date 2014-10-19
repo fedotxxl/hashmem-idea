@@ -62,6 +62,10 @@ public class HmLog {
         warn("Unknown hashMem.com notes sync response: " + statusCode);
     }
 
+    public void failedToSyncIoException() {
+        warn("Unable to connect to hashMem.com");
+    }
+
     public void failedToSyncUnknownException() {
         warn("Unknown hashMem notes sync exception");
     }
@@ -96,5 +100,4 @@ public class HmLog {
         });
 
     }
-
 }

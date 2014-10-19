@@ -7,6 +7,7 @@ package com.hashmem.idea;
 
 import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.event.SettingsChangeEvent;
+import com.hashmem.idea.remote.AuthService;
 import com.hashmem.idea.ui.HmSettingsDialog;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -20,6 +21,7 @@ import javax.swing.*;
 public class HashMemSettings implements Configurable {
 
     private AccountService accountService;
+    private AuthService authService;
     private EventBus eventBus;
 
     private HmSettingsDialog form = null;
@@ -45,7 +47,7 @@ public class HashMemSettings implements Configurable {
     @Override
     public JComponent createComponent() {
         if (form == null) {
-            form = new HmSettingsDialog(model);
+            form = new HmSettingsDialog(model, authService);
         }
 
         return form.getRootComponent();
@@ -84,14 +86,6 @@ public class HashMemSettings implements Configurable {
 
     public Model getModel() {
         return model;
-    }
-
-    public void setAccountService(AccountService accountService) {
-        this.accountService = accountService;
-    }
-
-    public void setEventBus(EventBus eventBus) {
-        this.eventBus = eventBus;
     }
 
     private Model loadModel() {
@@ -181,5 +175,18 @@ public class HashMemSettings implements Configurable {
         public String getField() {
             return "com.hashMem." + postfix;
         }
+    }
+
+    //=========== SETTERS ============
+    public void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
+    }
+
+    public void setEventBus(EventBus eventBus) {
+        this.eventBus = eventBus;
+    }
+
+    public void setAuthService(AuthService authService) {
+        this.authService = authService;
     }
 }
