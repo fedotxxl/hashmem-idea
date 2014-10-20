@@ -7,6 +7,7 @@ package com.hashmem.idea.remote;
 import com.google.gson.Gson;
 import com.hashmem.idea.domain.SyncNote;
 import com.hashmem.idea.service.FileSystem;
+import com.hashmem.idea.utils.ExceptionTracker;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.util.Computable;
 
@@ -92,7 +93,7 @@ public class SyncChangeService {
                             return new SyncChangeData();
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        ExceptionTracker.getInstance().trackAndRethrow(e);
                         return null;
                     }
                 }

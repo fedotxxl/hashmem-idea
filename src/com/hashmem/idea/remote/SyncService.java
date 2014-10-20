@@ -8,8 +8,8 @@ import com.google.common.collect.Lists;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.hashmem.idea.domain.SyncNote;
 import com.hashmem.idea.domain.Note;
+import com.hashmem.idea.domain.SyncNote;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
 import com.hashmem.idea.service.NotesService;
@@ -19,6 +19,7 @@ import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.utils.Callback;
 import com.hashmem.idea.utils.Debouncer;
 import com.hashmem.idea.utils.OneTimeContainer;
+import com.hashmem.idea.utils.TrackedRunnable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -83,9 +84,9 @@ public class SyncService {
 
         final long since = (isForceSync) ? 0l : lastSync;
 
-        ApplicationManager.getApplication().invokeLater(new Runnable() {
+        ApplicationManager.getApplication().invokeLater(new TrackedRunnable() {
             @Override
-            public void run() {
+            public void doRun() {
                 try {
                     syncing = true;
 
@@ -111,24 +112,24 @@ public class SyncService {
     }
 
     public void syncAllNow() {
-        syncBackground(new Runnable() {
+        syncBackground(new TrackedRunnable() {
             @Override
-            public void run() {
+            public void doRun() {
                 doSync(true);
             }
         });
     }
 
     public void syncOnChange() {
-        syncBackground(new Runnable() {
+        syncBackground(new TrackedRunnable() {
             @Override
-            public void run() {
+            public void doRun() {
                 syncOnChangeDebouncer.call(Boolean.TRUE);
             }
         });
     }
 
-    private void syncBackground(final Runnable runnable) {
+    private void syncBackground(final TrackedRunnable runnable) {
         ProgressManager.getInstance().run(new Task.Backgroundable(null, "Syncing hashMem.com notes") {
             public void run(@NotNull ProgressIndicator progressIndicator) {
                 progressIndicator.setFraction(0.10);

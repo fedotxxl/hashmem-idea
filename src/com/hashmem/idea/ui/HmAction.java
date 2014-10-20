@@ -5,6 +5,7 @@
 package com.hashmem.idea.ui;
 
 import com.hashmem.idea.HashMemApplicationComponent;
+import com.hashmem.idea.utils.ExceptionTracker;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
@@ -13,7 +14,11 @@ import com.intellij.openapi.project.Project;
 public class HmAction extends AnAction {
     @Override
     public void actionPerformed(AnActionEvent e) {
-        showPopup(e.getProject());
+        try {
+            showPopup(e.getProject());
+        } catch (Throwable t) {
+            ExceptionTracker.getInstance().trackAndRethrow(t);
+        }
     }
 
     private void showPopup(Project project) {

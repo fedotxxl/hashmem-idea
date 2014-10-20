@@ -52,7 +52,7 @@ public class HashMemApplicationComponent implements ApplicationComponent {
         Ide ide = new Ide();
         FileSystem fileSystem = new FileSystem();
         AuthService authService = new AuthService();
-        HttpService httpService = new HttpService();
+        HttpService httpService = HttpService.getInstance();
         Router router = new Router();
         SyncChangeService syncChangeService = new SyncChangeService();
         SettingsService settingsService = new SettingsService(settings.getModel());

@@ -5,6 +5,7 @@
 package com.hashmem.idea.ui;
 
 import com.hashmem.idea.remote.SyncService;
+import com.hashmem.idea.utils.TrackedRunnable;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.NotificationType;
@@ -92,9 +93,9 @@ public class HmLog {
 
     private static void notify(String message, NotificationType notificationType) {
         final Notification notification = NotificationGroup.balloonGroup(TITLE).createNotification(message, notificationType);
-        SwingUtilities.invokeLater(new Runnable() {
+        SwingUtilities.invokeLater(new TrackedRunnable() {
             @Override
-            public void run() {
+            public void doRun() {
                 Notifications.Bus.notify(notification);
             }
         });

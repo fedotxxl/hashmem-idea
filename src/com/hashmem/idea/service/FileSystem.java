@@ -17,6 +17,7 @@ package com.hashmem.idea.service;
 import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
+import com.hashmem.idea.utils.ExceptionTracker;
 import com.hashmem.idea.utils.OneTimeContainer;
 import com.intellij.CommonBundle;
 import com.intellij.openapi.application.ApplicationManager;
@@ -113,6 +114,7 @@ public class FileSystem implements BulkFileListener {
                             return true;
                         } catch (IOException e) {
                             LOG.warn(e);
+                            ExceptionTracker.getInstance().trackAndRethrow(e);
                             return false;
                         }
                     }
@@ -137,6 +139,7 @@ public class FileSystem implements BulkFileListener {
                     return true;
                 } catch (IOException e) {
                     LOG.warn(e);
+                    ExceptionTracker.getInstance().trackAndRethrow(e);
                     return false;
                 }
             }

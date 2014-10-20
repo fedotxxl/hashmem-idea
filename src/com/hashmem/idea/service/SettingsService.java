@@ -11,6 +11,8 @@ import org.apache.commons.lang.StringUtils;
 
 public class SettingsService {
 
+    public static final String APPLICATION_ID = "idea-1.0";
+
     private HashMemSettings.Model model;
 
     public SettingsService(HashMemSettings.Model model) {
@@ -20,7 +22,7 @@ public class SettingsService {
     private static String server = "http://localhost:8080/";
 
     public String getApplicationId() {
-        return "idea";
+        return APPLICATION_ID;
     }
 
     public String getUsername() {
