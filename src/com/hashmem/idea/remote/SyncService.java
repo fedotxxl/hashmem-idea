@@ -19,7 +19,7 @@ import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.utils.Callback;
 import com.hashmem.idea.utils.Debouncer;
 import com.hashmem.idea.utils.OneTimeContainer;
-import com.hashmem.idea.utils.TrackedRunnable;
+import com.hashmem.idea.tracked.TrackedRunnable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;

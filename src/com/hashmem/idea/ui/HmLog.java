@@ -5,7 +5,7 @@
 package com.hashmem.idea.ui;
 
 import com.hashmem.idea.remote.SyncService;
-import com.hashmem.idea.utils.TrackedRunnable;
+import com.hashmem.idea.tracked.TrackedRunnable;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.NotificationType;

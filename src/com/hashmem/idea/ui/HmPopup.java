@@ -5,11 +5,14 @@
 package com.hashmem.idea.ui;
 
 import com.google.common.collect.Lists;
-import com.hashmem.idea.domain.Query;
-import com.hashmem.idea.service.ActionProcessor;
 import com.hashmem.idea.domain.Command;
 import com.hashmem.idea.domain.Note;
+import com.hashmem.idea.domain.Query;
+import com.hashmem.idea.service.ActionProcessor;
 import com.hashmem.idea.service.NotesService;
+import com.hashmem.idea.tracked.TrackedActionListener;
+import com.hashmem.idea.tracked.TrackedDocumentAdapter;
+import com.hashmem.idea.utils.ExceptionTracker;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.ide.actions.GotoActionBase;
 import com.intellij.ide.util.gotoByName.ChooseByNameItemProvider;
@@ -31,7 +34,10 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.codeStyle.MinusculeMatcher;
 import com.intellij.psi.codeStyle.NameUtil;
 import com.intellij.psi.util.PsiUtilCore;
-import com.intellij.ui.*;
+import com.intellij.ui.JBColor;
+import com.intellij.ui.ListScrollingUtil;
+import com.intellij.ui.ScreenUtil;
+import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.popup.PopupOwner;
 import com.intellij.ui.popup.PopupPositionManager;
@@ -205,8 +211,13 @@ public class HmPopup {
         builder.setCancelCallback(new Computable<Boolean>() {
             @Override
             public Boolean compute() {
-                myTextPopup = null;
-                close(false);
+                try {
+                    myTextPopup = null;
+                    close(false);
+                } catch (Throwable t) {
+                    ExceptionTracker.getInstance().trackAndRethrow(t);
+                }
+
                 return Boolean.TRUE;
             }
         }).setFocusable(true).setRequestFocus(true).setModalContext(false).setCancelOnClickOutside(false);
@@ -229,14 +240,18 @@ public class HmPopup {
         myTextField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusLost(@NotNull final FocusEvent e) {
-                Component oppositeComponent = e.getOppositeComponent();
+                try {
+                    Component oppositeComponent = e.getOppositeComponent();
 
-                if (oppositeComponent != null && !(oppositeComponent instanceof JFrame) &&
-                        myList.isShowing() &&
-                        (oppositeComponent == myList || SwingUtilities.isDescendingFrom(myList, oppositeComponent))) {
-                    myTextField.requestFocus();// Otherwise me may skip some KeyEvents
-                } else {
-                    close(false);
+                    if (oppositeComponent != null && !(oppositeComponent instanceof JFrame) &&
+                            myList.isShowing() &&
+                            (oppositeComponent == myList || SwingUtilities.isDescendingFrom(myList, oppositeComponent))) {
+                        myTextField.requestFocus();// Otherwise me may skip some KeyEvents
+                    } else {
+                        close(false);
+                    }
+                } catch (Throwable t) {
+                    ExceptionTracker.getInstance().trackAndRethrow(t);
                 }
             }
         });
@@ -253,6 +268,14 @@ public class HmPopup {
         myTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(@NotNull KeyEvent e) {
+                try {
+                    onKeyPressed(e);
+                } catch (Throwable t) {
+                    ExceptionTracker.getInstance().trackAndRethrow(t);
+                }
+            }
+
+            private void onKeyPressed(@NotNull KeyEvent e) {
                 if (!myListScrollPane.isVisible()) {
                     return;
                 }
@@ -325,9 +348,9 @@ public class HmPopup {
             }
         });
 
-        myTextField.addActionListener(new ActionListener() {
+        myTextField.addActionListener(new TrackedActionListener() {
             @Override
-            public void actionPerformed(ActionEvent actionEvent) {
+            public void doActionPerformed(ActionEvent actionEvent) {
                 boolean isSuccess = actionProcessor.processAction(getQuery(), myProject);
 
                 if (isSuccess) {
@@ -336,9 +359,9 @@ public class HmPopup {
             }
         });
 
-        myTextField.getDocument().addDocumentListener(new DocumentAdapter() {
+        myTextField.getDocument().addDocumentListener(new TrackedDocumentAdapter() {
             @Override
-            protected void textChanged(DocumentEvent e) {
+            protected void doTextChanged(DocumentEvent e) {
                 currentQuery = null;
 
                 if (isSkipQueryChangeEvent) return;

@@ -2,7 +2,9 @@
  * TrackedRunnable
  * Copyright (c) 2012 Cybervision. All rights reserved.
  */
-package com.hashmem.idea.utils;
+package com.hashmem.idea.tracked;
+
+import com.hashmem.idea.utils.ExceptionTracker;
 
 public abstract class TrackedRunnable implements Runnable {
 

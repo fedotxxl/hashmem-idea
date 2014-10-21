@@ -23,7 +23,7 @@
   -->
 
   <extensions defaultExtensionNs="com.intellij">
-    <!-- Add your extensions here -->
+    <errorHandler implementation="com.hashmem.idea.HashMemErrorReportSubmitter"/>
   </extensions>
 
   <application-components>

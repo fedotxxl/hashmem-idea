@@ -6,7 +6,9 @@ package com.hashmem.idea.ui;
 
 import com.hashmem.idea.HashMemSettings;
 import com.hashmem.idea.remote.AuthService;
-import com.intellij.ui.DocumentAdapter;
+import com.hashmem.idea.tracked.TrackedActionListener;
+import com.hashmem.idea.tracked.TrackedDocumentAdapter;
+import com.hashmem.idea.tracked.TrackedItemListener;
 import com.intellij.ui.JBColor;
 import org.apache.commons.lang.StringUtils;
 
@@ -14,9 +16,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -51,9 +51,9 @@ public class HmSettingsDialog {
 
             sync = new JCheckBox();
             sync.setSelected(model.isSyncEnabled());
-            sync.addItemListener(new ItemListener() {
+            sync.addItemListener(new TrackedItemListener() {
                 @Override
-                public void itemStateChanged(ItemEvent e) {
+                public void doItemStateChanged(ItemEvent e) {
                     updateUsernameEnabled();
                     updatePasswordEnabled();
                     updateCheckCredentialsEnabled();
@@ -63,18 +63,18 @@ public class HmSettingsDialog {
 
 
             username = new JTextField(model.getUsername(), 16);
-            username.getDocument().addDocumentListener(new DocumentAdapter() {
+            username.getDocument().addDocumentListener(new TrackedDocumentAdapter() {
                 @Override
-                protected void textChanged(DocumentEvent e) {
+                protected void doTextChanged(DocumentEvent e) {
                     updateCheckCredentialsEnabled();
                 }
             });
 
             password = new JPasswordField(model.getPassword(), 16);
             password.setFont(username.getFont());
-            password.getDocument().addDocumentListener(new DocumentAdapter() {
+            password.getDocument().addDocumentListener(new TrackedDocumentAdapter() {
                 @Override
-                protected void textChanged(DocumentEvent e) {
+                protected void doTextChanged(DocumentEvent e) {
                     updateCheckCredentialsEnabled();
 
                 }
@@ -97,9 +97,9 @@ public class HmSettingsDialog {
 
             JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
             checkCredentials = new JButton("Check credentials");
-            checkCredentials.addActionListener(new ActionListener() {
+            checkCredentials.addActionListener(new TrackedActionListener() {
                 @Override
-                public void actionPerformed(ActionEvent e) {
+                public void doActionPerformed(ActionEvent e) {
                     AuthService.Result result = authService.tryAuthenticate(getUsername(), getPassword());
                     if (result == AuthService.Result.SUCCESS) {
                         displayInfoMessage("Successfully logged in");
@@ -116,9 +116,9 @@ public class HmSettingsDialog {
             buttons.add(checkCredentials);
 
             changeUsername = new JButton("Change username");
-            changeUsername.addActionListener(new ActionListener() {
+            changeUsername.addActionListener(new TrackedActionListener() {
                 @Override
-                public void actionPerformed(ActionEvent e) {
+                public void doActionPerformed(ActionEvent e) {
                     String[] options = { "Unlink", "Unlink and remove local notes", "Cancel" };
                     JPanel panel = new JPanel();
                     panel.add(new JLabel("<html>If you will change username your local notes will be synced with new account.<br>" +
