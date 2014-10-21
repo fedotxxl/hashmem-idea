@@ -66,7 +66,7 @@ import java.util.Set;
 
 public class HmPopup {
 
-    private static int VISIBLE_LIST_SIZE_LIMIT = 5;
+    private static int VISIBLE_LIST_SIZE_LIMIT = 6;
     private static int LIST_SIZE_LIMIT = VISIBLE_LIST_SIZE_LIMIT;
 
     protected JBPopup myDropdownPopup;
@@ -122,7 +122,7 @@ public class HmPopup {
 
         final Dimension preferredScrollPaneSize = myListScrollPane.getPreferredSize();
         if (myList.getModel().getSize() == 0) {
-            preferredScrollPaneSize.height = UIManager.getFont("Label.font").getSize();
+            preferredScrollPaneSize.height = UIManager.getFont("Label.font").getSize() + 8;
         }
 
         preferredScrollPaneSize.width = Math.max(myTextFieldPanel.getWidth(), preferredScrollPaneSize.width);
@@ -159,15 +159,13 @@ public class HmPopup {
             });
             myDropdownPopup = builder.createPopup();
             myDropdownPopup.setLocation(preferredBounds.getLocation());
-            myDropdownPopup.setSize(preferredBounds.getSize());
             myDropdownPopup.show(layeredPane);
             myList.setFocusable(false);
             myList.setSelectedIndex(5);
             myList.updateUI();
-        } else {
-            myDropdownPopup.setLocation(preferredBounds.getLocation());
-            myDropdownPopup.setSize(preferredBounds.getSize());
         }
+
+        myDropdownPopup.setSize(preferredBounds.getSize());
     }
 
     private void setMatcher(String pattern) {
@@ -451,30 +449,18 @@ public class HmPopup {
     }
 
     public ArrayList<HmListItem> getElementsByPattern(@NotNull String pattern, @NotNull Collection<HmListItem> elements) {
-        long start = System.currentTimeMillis();
-//        myProvider.filterElements(
-//                ChooseByNameBase.this, pattern, everywhere,
-//                cancelled,
-//                new Processor<Object>() {
-//                    @Override
-//                    public boolean process(Object o) {
-//                        if (cancelled.isCanceled()) return false;
-//                        elements.add(o);
-//                        return true;
-//                    }
-//                }
-//        );
-
         ArrayList<HmListItem> answer = Lists.newArrayList();
 
-        final MinusculeMatcher matcher = buildPatternMatcher(addSearchAnywherePatternDecorationIfNeeded(pattern), NameUtil.MatchingCaseSensitivity.NONE);
+        if (!StringUtils.isEmpty(pattern)) {
+            final MinusculeMatcher matcher = buildPatternMatcher(addSearchAnywherePatternDecorationIfNeeded(pattern), NameUtil.MatchingCaseSensitivity.NONE);
 
-        for (HmListItem o : elements) {
-            if (o != null) {
-                MatchResult result = matches(matcher, getObjectName(o));
+            for (HmListItem o : elements) {
+                if (o != null) {
+                    MatchResult result = matches(matcher, getObjectName(o));
 
-                if (result != null) {
-                    answer.add(o);
+                    if (result != null) {
+                        answer.add(o);
+                    }
                 }
             }
         }
