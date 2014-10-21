@@ -6,7 +6,6 @@ repositories {
 }
 
 dependencies {
-    compile 'org.slf4j:slf4j-nop:1.6.3'
     compile 'commons-io:commons-io:2.4'
 }
 
