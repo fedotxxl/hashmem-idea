@@ -196,9 +196,7 @@ public class HmSettingsDialog {
         private void updateCheckCredentialsEnabled() {
             boolean isEnabled = true;
 
-            if (!isSyncEnabled()) {
-                isEnabled = false;
-            } else if (StringUtils.isEmpty(getUsername()) || StringUtils.isEmpty(getPassword())) {
+            if (StringUtils.isEmpty(getUsername()) || StringUtils.isEmpty(getPassword())) {
                 isEnabled = false;
             }
 
@@ -208,7 +206,9 @@ public class HmSettingsDialog {
         private void updateChangeUsernameEnabled() {
             boolean isEnabled = true;
 
-            if (!hasUsernameOnStartup) {
+            if (!isSyncEnabled()) {
+                isEnabled = false;
+            } else if (!hasUsernameOnStartup) {
                 isEnabled = false;
             } else if (action != null) {
                 isEnabled = false;
