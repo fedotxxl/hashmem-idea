@@ -31,3 +31,5 @@ TODO
 *Settings
 *Logs/Error notification
 *Clear code
+
+*remove reset
