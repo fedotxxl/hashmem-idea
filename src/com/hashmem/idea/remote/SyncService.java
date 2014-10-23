@@ -142,6 +142,7 @@ public class SyncService {
     }
 
     public void resetSyncData() {
+        lastSync = 0l;
         syncChangeService.forgetAll();
     }
 
