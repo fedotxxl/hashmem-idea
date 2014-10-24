@@ -31,6 +31,14 @@ public class AuthService {
         return token;
     }
 
+    public synchronized String getValidToken() throws NotAuthenticatedException, IOException {
+        if (token == null || isTokenCorrect(token)) {
+            return getToken();
+        } else {
+            return refreshToken();
+        }
+    }
+
     public Result tryAuthenticate(String username, String password) {
         try {
             String token = getToken(username, password);
@@ -57,9 +65,18 @@ public class AuthService {
         }
     }
 
-    public synchronized String getTokenOrEmpty() {
+    private boolean isTokenCorrect(String token) {
         try {
-            return getToken();
+            HttpResponse r = Request.Get(router.getPing(token)).execute().returnResponse();
+            return r.getStatusLine().getStatusCode() == 200;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public synchronized String getValidTokenOrEmpty() {
+        try {
+            return getValidToken();
         } catch (NotAuthenticatedException e) {
             return "";
         } catch (IOException e) {

@@ -20,6 +20,10 @@ public class Router {
         return settingsService.getSyncServer() + "/api/v1/hm/sync?token=" + token;
     }
 
+    public String getPing(String token) {
+        return settingsService.getSyncServer() + "/api/v1/hm/ping?token=" + token;
+    }
+
     public String getAuth() {
         return getAuth(settingsService.getUsername(), settingsService.getPassword());
     }
@@ -42,7 +46,7 @@ public class Router {
             public void construct(URIBuilder builder) {
                 builder
                         .addParameter("mail", settingsService.getUsername())
-                        .addParameter("token", authService.getTokenOrEmpty())
+                        .addParameter("token", authService.getValidTokenOrEmpty())
                         .addParameter("note", key);
             }
         });
