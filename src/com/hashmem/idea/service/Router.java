@@ -16,8 +16,15 @@ public class Router {
     private AuthService authService;
     private SettingsService settingsService;
 
-    public String getSync(String token) {
-        return settingsService.getSyncServer() + "/api/v1/hm/sync?token=" + token;
+    public String getSync(final String token) {
+        return getUrl("api/v1/hm/sync", new UrlConstructor() {
+            @Override
+            public void construct(URIBuilder builder) {
+                builder
+                        .addParameter("applicationId", settingsService.getApplicationId())
+                        .addParameter("token", token);
+            }
+        }).toString();
     }
 
     public String getPing(String token) {
