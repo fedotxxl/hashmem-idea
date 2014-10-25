@@ -33,3 +33,4 @@ TODO
 *Clear code
 
 *remove reset
+*compatible with old products - https://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
