@@ -7,19 +7,19 @@ package com.hashmem.idea.remote;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.hashmem.idea.domain.Note;
 import com.hashmem.idea.domain.SyncNote;
+import com.hashmem.idea.domain.SyncResponse;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
 import com.hashmem.idea.service.NotesService;
 import com.hashmem.idea.service.Router;
 import com.hashmem.idea.service.SettingsService;
+import com.hashmem.idea.tracked.TrackedRunnable;
 import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.utils.Callback;
 import com.hashmem.idea.utils.Debouncer;
 import com.hashmem.idea.utils.OneTimeContainer;
-import com.hashmem.idea.tracked.TrackedRunnable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
@@ -31,10 +31,8 @@ import org.apache.http.HttpResponse;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static com.intellij.util.containers.ContainerUtil.filter;
@@ -92,7 +90,7 @@ public class SyncService {
 
                     long synced = System.currentTimeMillis();
                     Collection<SyncNote> notesToServer = getNotesToSync(since);
-                    Collection<SyncNote> notesFromServer = pushNotes(since, notesToServer);
+                    SyncResponse notesFromServer = pushNotes(since, notesToServer);
                     saveChangedNotes(notesFromServer, synced, notesToServer);
                     lastSync = synced;
                 } catch (NotAuthenticatedException nae) {
@@ -146,23 +144,28 @@ public class SyncService {
         syncChangeService.forgetAll();
     }
 
-    private void saveChangedNotes(final Collection<SyncNote> notes, final long synced, final Collection<SyncNote> notesToServer) {
+    private void saveChangedNotes(final SyncResponse syncResponse, final long synced, final Collection<SyncNote> notesToServer) {
         final SyncResult result = new SyncResult(notesToServer.size());
 
         syncChangeService.forget(filter(notesToServer, DELETED_ONLY_CONDITION));
 
-        if (notes == null || notes.size() == 0) {
-            log.syncResult(result);
+        if (syncResponse == null || syncResponse.isNothingToUpdate()) {
+            log.syncResult(result, syncResponse);
         } else {
             ApplicationManager.getApplication().runWriteAction(new Runnable() {
                 @Override
                 public void run() {
-                    for (SyncNote note : notes) {
+                    for (SyncNote note : syncResponse.getNotes()) {
                         SyncChangeResult change = saveNoteFromServer(note, synced);
                         result.increase(change);
                     }
 
-                    log.syncResult(result);
+                    for(String noteKey : syncResponse.getDeletedNotes()) {
+                        SyncChangeResult change = saveNoteFromServer(SyncNote.newDeletedNote(noteKey, synced), synced);
+                        result.increase(change);
+                    }
+
+                    log.syncResult(result, syncResponse);
                 }
             });
         }
@@ -222,7 +225,7 @@ public class SyncService {
         return answer;
     }
 
-    private Collection<SyncNote> pushNotes(long lastSync, final Collection<SyncNote> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
+    private SyncResponse pushNotes(long lastSync, final Collection<SyncNote> notesToServer) throws NotAuthenticatedException, IOException, UnknownSyncException {
         long now = System.currentTimeMillis();
         Map<String, Object> data = new HashMap<String, Object>();
         data.put("now", now);
@@ -235,9 +238,7 @@ public class SyncService {
         Integer status = response.getStatusLine().getStatusCode();
 
         if (status == 200) {
-            Type collectionType = new TypeToken<List<SyncNote>>(){}.getType();
-            List<SyncNote> notesFromServer = new Gson().fromJson(IOUtils.toString(response.getEntity().getContent(), "UTF-8"), collectionType);
-            return notesFromServer;
+            return SyncResponse.fromJson(IOUtils.toString(response.getEntity().getContent(), "UTF-8"));
         } else if (status == 401) {
             throw new NotAuthenticatedException();
         } else {

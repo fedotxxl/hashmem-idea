@@ -3,10 +3,19 @@ apply plugin: "java"
 
 repositories {
     mavenCentral()
+
+    // Spock snapshots are available from the Sonatype OSS snapshot repository
+    maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
+}
+
+project.ext {
+    spockVersion = '0.7-groovy-2.0'
+    groovyVersion = "2.2.1"
 }
 
 dependencies {
-    compile 'commons-io:commons-io:2.4'
+    testCompile "org.codehaus.groovy:groovy-all:$groovyVersion"
+    testCompile "org.spockframework:spock-core:$spockVersion"
 }
 
 idea.project.ipr {

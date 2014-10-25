@@ -17,7 +17,7 @@ public class Router {
     private SettingsService settingsService;
 
     public String getSync(final String token) {
-        return getUrl("api/v1/hm/sync", new UrlConstructor() {
+        return getUrl("api/v1.1/sync", new UrlConstructor() {
             @Override
             public void construct(URIBuilder builder) {
                 builder

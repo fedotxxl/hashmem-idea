@@ -4,14 +4,18 @@
  */
 package com.hashmem.idea.ui;
 
+import com.hashmem.idea.domain.SyncResponse;
 import com.hashmem.idea.remote.SyncService;
 import com.hashmem.idea.tracked.TrackedRunnable;
 import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationGroup;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
+import org.apache.commons.lang.StringUtils;
 
 import javax.swing.*;
+import java.util.List;
+import java.util.Map;
 
 public class HmLog {
 
@@ -71,7 +75,7 @@ public class HmLog {
         warn("Unknown hashMem notes sync exception");
     }
 
-    public void syncResult(SyncService.SyncResult result) {
+    public void syncResult(SyncService.SyncResult result, SyncResponse syncResponse) {
         String message = "Successfully synced notes. <br>Sent: " + result.getSentToServerCount();
         if (result.hasCreated()) message += "; created: " + result.getCreated();
         if (result.hasUpdated()) message += "; updated: " + result.getUpdated();
@@ -81,7 +85,29 @@ public class HmLog {
             message += "; received: 0";
         }
 
-        info(message);
+        if (syncResponse.hasErrors()) {
+            message += "<br>Some notes failed to sync:";
+
+            for (Map.Entry<String, List<String>> e : syncResponse.getErrors().entrySet()) {
+                message += "<br>" + getNoteSyncErrorTranslation(e.getKey()) + ": " + StringUtils.join(e.getValue(), ", ");
+            }
+        }
+
+        if (syncResponse.hasErrors()) {
+            warn(message);
+        } else {
+            info(message);
+        }
+    }
+
+    private String getNoteSyncErrorTranslation(String key) {
+        if ("key.invalid".equals(key)) {
+            return "Invalid key";
+        } else if ("content.too-large".equals(key)) {
+            return "Too large note size";
+        } else {
+            return key;
+        }
     }
 
     private void warn(String message) {
