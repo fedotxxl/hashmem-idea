@@ -18,7 +18,7 @@ import static com.intellij.util.containers.ContainerUtil.map;
 
 public class NotesService {
 
-    private static final Pattern VALIDATE_KEY = Pattern.compile("^[0-9a-zA-Z\\.\\-_]*$");
+    private static final Pattern VALIDATE_KEY = Pattern.compile("^[0-9a-zA-Z][0-9a-zA-Z\\.\\-_]*$");
 
     private FileSystem fileSystem;
 
