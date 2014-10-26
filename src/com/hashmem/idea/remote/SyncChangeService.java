@@ -7,9 +7,11 @@ package com.hashmem.idea.remote;
 import com.google.gson.Gson;
 import com.hashmem.idea.domain.SyncNote;
 import com.hashmem.idea.service.FileSystem;
+import com.hashmem.idea.utils.Callback;
 import com.hashmem.idea.utils.ExceptionTracker;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.util.Computable;
+import com.intellij.openapi.vfs.VirtualFile;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -72,11 +74,16 @@ public class SyncChangeService {
     }
 
     private void saveSyncChangeData() {
-        try {
-            fileSystem.getSyncFile().setBinaryContent(new Gson().toJson(syncChangeData).getBytes("UTF-8"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        fileSystem.getSyncFile(new Callback<VirtualFile>() {
+            @Override
+            public void call(VirtualFile syncFile) {
+                try {
+                    syncFile.setBinaryContent(new Gson().toJson(syncChangeData).getBytes("UTF-8"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     private SyncChangeData getSyncChangeData() {
@@ -85,7 +92,12 @@ public class SyncChangeService {
                 @Override
                 public SyncChangeData compute() {
                     try {
-                        SyncChangeData answer = new Gson().fromJson(new InputStreamReader(fileSystem.getSyncFile().getInputStream()), SyncChangeData.class);
+                        SyncChangeData answer = null;
+                        VirtualFile syncFile = fileSystem.getSyncFile();
+
+                        if (syncFile != null) {
+                            answer = new Gson().fromJson(new InputStreamReader(syncFile.getInputStream()), SyncChangeData.class);
+                        }
 
                         if (answer != null) {
                             return answer;

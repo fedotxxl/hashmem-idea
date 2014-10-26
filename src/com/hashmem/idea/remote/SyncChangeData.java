@@ -7,13 +7,14 @@ package com.hashmem.idea.remote;
 import com.google.common.collect.Maps;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class SyncChangeData {
 
-    private Map<String, Long> deleted = Maps.newHashMap();
-    private Map<String, Long> updated = Maps.newHashMap();
+    private Map<String, Long> deleted = new HashMap<String, Long>();
+    private Map<String, Long> updated = new HashMap<String, Long>();
 
     void markAsUpdated(String key, long date) {
         updated.put(key, date);

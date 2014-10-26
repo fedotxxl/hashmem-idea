@@ -17,8 +17,8 @@ public class Router {
     public String getSync(final String token) {
         return getUrl("api/v1.1/sync", new UrlConstructor() {
             @Override
-            public void construct(UrlBuilder builder) {
-                builder
+            public UrlBuilder construct(UrlBuilder builder) {
+                return builder
                         .addParameter("applicationId", settingsService.getApplicationId())
                         .addParameter("token", token);
             }
@@ -36,8 +36,8 @@ public class Router {
     public String getAuth(final String username, final String password) {
         return getUrl("api/v1/auth", new UrlConstructor() {
             @Override
-            public void construct(UrlBuilder builder) {
-                builder
+            public UrlBuilder construct(UrlBuilder builder) {
+                return builder
                         .addParameter("applicationId", settingsService.getApplicationId())
                         .addParameter("username", username)
                         .addParameter("password", password);
@@ -48,8 +48,8 @@ public class Router {
     public URL getOpenNote(final String key) {
         return getUrl("auth/login_token", new UrlConstructor() {
             @Override
-            public void construct(UrlBuilder builder) {
-                builder
+            public UrlBuilder construct(UrlBuilder builder) {
+                return builder
                         .addParameter("mail", settingsService.getUsername())
                         .addParameter("token", authService.getValidTokenOrEmpty())
                         .addParameter("note", key);
@@ -71,13 +71,13 @@ public class Router {
 
     private URL getUrl(String page, UrlConstructor urlConstructor) {
             UrlBuilder builder = UrlBuilder.fromString(settingsService.getSyncServer() + page);
-            if (urlConstructor != null) urlConstructor.construct(builder);
+            if (urlConstructor != null) builder = urlConstructor.construct(builder);
 
             return builder.toUrl();
     }
 
     private static interface UrlConstructor {
-        void construct(UrlBuilder builder);
+        UrlBuilder construct(UrlBuilder builder);
     }
 
     //=========== SETTERS ============

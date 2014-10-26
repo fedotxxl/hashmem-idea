@@ -24,6 +24,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.Condition;
 import com.intellij.util.Function;
 import org.jetbrains.annotations.NotNull;
@@ -80,31 +81,26 @@ public class SyncService {
 
         final long since = (isForceSync) ? 0l : lastSync;
 
-        ApplicationManager.getApplication().invokeLater(new TrackedRunnable() {
-            @Override
-            public void doRun() {
-                try {
-                    syncing = true;
+        try {
+            syncing = true;
 
-                    long synced = System.currentTimeMillis();
-                    Collection<SyncNote> notesToServer = getNotesToSync(since);
-                    SyncResponse notesFromServer = pushNotes(since, notesToServer);
-                    saveChangedNotes(notesFromServer, synced, notesToServer);
-                    lastSync = synced;
-                } catch (NotAuthenticatedException nae) {
-                    log.failedToSyncIncorrectUsernameOrPassword();
-                } catch (UnknownSyncException use) {
-                    log.failedToSyncUnknownResponse(use.getStatusCode());
-                } catch (IOException io) {
-                    log.failedToSyncIoException();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    log.failedToSyncUnknownException();
-                } finally {
-                    syncing = false;
-                }
-            }
-        });
+            long synced = System.currentTimeMillis();
+            Collection<SyncNote> notesToServer = getNotesToSync(since);
+            SyncResponse notesFromServer = pushNotes(since, notesToServer);
+            saveChangedNotes(notesFromServer, synced, notesToServer);
+            lastSync = synced;
+        } catch (NotAuthenticatedException nae) {
+            log.failedToSyncIncorrectUsernameOrPassword();
+        } catch (UnknownSyncException use) {
+            log.failedToSyncUnknownResponse(use.getStatusCode());
+        } catch (IOException io) {
+            log.failedToSyncIoException();
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.failedToSyncUnknownException();
+        } finally {
+            syncing = false;
+        }
     }
 
     public void syncAllNow() {
@@ -143,30 +139,37 @@ public class SyncService {
     }
 
     private void saveChangedNotes(final SyncResponse syncResponse, final long synced, final Collection<SyncNote> notesToServer) {
-        final SyncResult result = new SyncResult(notesToServer.size());
+        ApplicationManager.getApplication().invokeLater(new TrackedRunnable() {
+            @Override
+            public void doRun() {
+                ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
+                    @Override
+                    public Boolean compute() {
+                        final SyncResult result = new SyncResult(notesToServer.size());
 
-        syncChangeService.forget(filter(notesToServer, DELETED_ONLY_CONDITION));
+                        syncChangeService.forget(filter(notesToServer, DELETED_ONLY_CONDITION));
 
-        if (syncResponse == null || syncResponse.isNothingToUpdate()) {
-            log.syncResult(result, syncResponse);
-        } else {
-            ApplicationManager.getApplication().runWriteAction(new Runnable() {
-                @Override
-                public void run() {
-                    for (SyncNote note : syncResponse.getNotes()) {
-                        SyncChangeResult change = saveNoteFromServer(note, synced);
-                        result.increase(change);
+                        if (syncResponse == null || syncResponse.isNothingToUpdate()) {
+                            log.syncResult(result, syncResponse);
+                        } else {
+                            for (SyncNote note : syncResponse.getNotes()) {
+                                SyncChangeResult change = saveNoteFromServer(note, synced);
+                                result.increase(change);
+                            }
+
+                            for(String noteKey : syncResponse.getDeletedNotes()) {
+                                SyncChangeResult change = saveNoteFromServer(SyncNote.newDeletedNote(noteKey, synced), synced);
+                                result.increase(change);
+                            }
+
+                            log.syncResult(result, syncResponse);
+                        }
+
+                        return true;
                     }
-
-                    for(String noteKey : syncResponse.getDeletedNotes()) {
-                        SyncChangeResult change = saveNoteFromServer(SyncNote.newDeletedNote(noteKey, synced), synced);
-                        result.increase(change);
-                    }
-
-                    log.syncResult(result, syncResponse);
-                }
-            });
-        }
+                });
+            }
+        });
     }
 
     private SyncChangeResult saveNoteFromServer(SyncNote note, long synced) {

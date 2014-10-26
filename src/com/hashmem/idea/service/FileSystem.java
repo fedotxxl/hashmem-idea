@@ -17,6 +17,8 @@ package com.hashmem.idea.service;
 import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
+import com.hashmem.idea.tracked.TrackedRunnable;
+import com.hashmem.idea.utils.Callback;
 import com.hashmem.idea.utils.ExceptionTracker;
 import com.hashmem.idea.utils.OneTimeContainer;
 import com.intellij.CommonBundle;
@@ -228,14 +230,23 @@ public class FileSystem implements BulkFileListener {
         return e instanceof VFileCreateEvent || e instanceof VFileDeleteEvent || e instanceof VFileContentChangeEvent || e instanceof VFileCopyEvent || e instanceof VFileMoveEvent;
     }
 
-    public VirtualFile getSyncFile() {
-        VirtualFile deleted = virtualFileBy(SYNC_FILE);
+    public @Nullable VirtualFile getSyncFile() {
+        return virtualFileBy(SYNC_FILE);
+    }
 
-        if (deleted == null) {
-            deleted = createSupportFile(SYNC_FILE, "");
+    public void getSyncFile(final Callback<VirtualFile> callback) {
+        VirtualFile syncFile = virtualFileBy(SYNC_FILE);
+
+        if (syncFile == null) {
+            ApplicationManager.getApplication().invokeLater(new TrackedRunnable() {
+                @Override
+                public void doRun() {
+                    callback.call(createSupportFile(SYNC_FILE, ""));
+                }
+            });
+        } else {
+            callback.call(syncFile);
         }
-
-        return deleted;
     }
 
     private VirtualFile createSupportFile(String fileName, String content) {
