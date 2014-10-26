@@ -26,8 +26,6 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.util.Condition;
 import com.intellij.util.Function;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpResponse;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -233,12 +231,12 @@ public class SyncService {
         data.put("notes", notesToServer);
 
         HttpResponse response = doPushNotes(authService.getToken(), data);
-        if (response.getStatusLine().getStatusCode() == 401) response = doPushNotes(authService.refreshToken(), data);
+        if (response.getStatusCode() == 401) response = doPushNotes(authService.refreshToken(), data);
 
-        Integer status = response.getStatusLine().getStatusCode();
+        int status = response.getStatusCode();
 
         if (status == 200) {
-            return SyncResponse.fromJson(IOUtils.toString(response.getEntity().getContent(), "UTF-8"));
+            return SyncResponse.fromJson(response.getBody());
         } else if (status == 401) {
             throw new NotAuthenticatedException();
         } else {
@@ -310,7 +308,7 @@ public class SyncService {
         }
 
         public int getStatusCode() {
-            return response.getStatusLine().getStatusCode();
+            return response.getStatusCode();
         }
     }
 

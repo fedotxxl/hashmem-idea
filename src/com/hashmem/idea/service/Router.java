@@ -5,10 +5,8 @@
 package com.hashmem.idea.service;
 
 import com.hashmem.idea.remote.AuthService;
-import org.apache.http.client.utils.URIBuilder;
+import gumi.builders.UrlBuilder;
 
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 
 public class Router {
@@ -19,7 +17,7 @@ public class Router {
     public String getSync(final String token) {
         return getUrl("api/v1.1/sync", new UrlConstructor() {
             @Override
-            public void construct(URIBuilder builder) {
+            public void construct(UrlBuilder builder) {
                 builder
                         .addParameter("applicationId", settingsService.getApplicationId())
                         .addParameter("token", token);
@@ -38,7 +36,7 @@ public class Router {
     public String getAuth(final String username, final String password) {
         return getUrl("api/v1/auth", new UrlConstructor() {
             @Override
-            public void construct(URIBuilder builder) {
+            public void construct(UrlBuilder builder) {
                 builder
                         .addParameter("applicationId", settingsService.getApplicationId())
                         .addParameter("username", username)
@@ -50,7 +48,7 @@ public class Router {
     public URL getOpenNote(final String key) {
         return getUrl("auth/login_token", new UrlConstructor() {
             @Override
-            public void construct(URIBuilder builder) {
+            public void construct(UrlBuilder builder) {
                 builder
                         .addParameter("mail", settingsService.getUsername())
                         .addParameter("token", authService.getValidTokenOrEmpty())
@@ -72,24 +70,15 @@ public class Router {
     }
 
     private URL getUrl(String page, UrlConstructor urlConstructor) {
-        try {
-            URIBuilder builder = new URIBuilder(settingsService.getSyncServer() + page);
+            UrlBuilder builder = UrlBuilder.fromString(settingsService.getSyncServer() + page);
             if (urlConstructor != null) urlConstructor.construct(builder);
 
-            return builder.build().toURL();
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-            return null;
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            return null;
-        }
+            return builder.toUrl();
     }
 
     private static interface UrlConstructor {
-        void construct(URIBuilder builder);
+        void construct(UrlBuilder builder);
     }
-
 
     //=========== SETTERS ============
     public void setSettingsService(SettingsService settingsService) {

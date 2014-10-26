@@ -5,13 +5,10 @@
 package com.hashmem.idea.remote;
 
 import com.google.common.eventbus.Subscribe;
+import com.hashmem.idea.event.SettingsChangeEvent;
 import com.hashmem.idea.service.Router;
 import com.hashmem.idea.service.SettingsService;
-import com.hashmem.idea.event.SettingsChangeEvent;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.fluent.Request;
 
 import java.io.IOException;
 
@@ -56,10 +53,10 @@ public class AuthService {
     }
 
     private String getToken(String username, String password) throws NotAuthenticatedException, IOException {
-        HttpResponse r = Request.Post(router.getAuth(username, password)).execute().returnResponse();
+        HttpResponse r = httpService.post(router.getAuth(username, password));
 
-        if (r.getStatusLine().getStatusCode() == 200) {
-            return IOUtils.toString(r.getEntity().getContent(), "UTF-8");
+        if (r.getStatusCode() == 200) {
+            return r.getBody();
         } else {
             throw new NotAuthenticatedException();
         }
@@ -67,8 +64,8 @@ public class AuthService {
 
     private boolean isTokenCorrect(String token) {
         try {
-            HttpResponse r = Request.Get(router.getPing(token)).execute().returnResponse();
-            return r.getStatusLine().getStatusCode() == 200;
+            HttpResponse r = httpService.get(router.getPing(token));
+            return r.getStatusCode() == 200;
         } catch (IOException e) {
             return false;
         }
