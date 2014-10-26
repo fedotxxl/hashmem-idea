@@ -95,9 +95,9 @@ public class HashMemSettings implements Configurable {
     }
 
     private Model loadModel() {
-        String isSyncEnabled = get(Property.SYNC);
-        String username = get(Property.USERNAME);
-        String password = get(Property.PASSWORD);
+        String isSyncEnabled = get(Property.SYNC, "0");
+        String username = get(Property.USERNAME, "");
+        String password = get(Property.PASSWORD, "");
 
         return new Model("1".equals(isSyncEnabled), username, password);
     }
@@ -112,8 +112,14 @@ public class HashMemSettings implements Configurable {
         PropertiesComponent.getInstance().setValue(property.getField(), value);
     }
 
-    private static String get(Property property) {
-        return PropertiesComponent.getInstance().getValue(property.getField());
+    private static String get(Property property, String defaultValue) {
+        String answer =  PropertiesComponent.getInstance().getValue(property.getField());
+
+        if (answer == null) {
+            return defaultValue;
+        } else {
+            return answer;
+        }
     }
 
     public static class Model {
