@@ -7,7 +7,10 @@ package com.hashmem.idea.ui;
 import com.hashmem.idea.service.FileSystem;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
+import com.intellij.openapi.fileTypes.FileType;
+import com.intellij.openapi.fileTypes.FileTypeManager;
 import com.intellij.openapi.fileTypes.PlainTextFileType;
+import com.intellij.openapi.fileTypes.UnknownFileType;
 import com.intellij.openapi.fileTypes.impl.FileTypeManagerImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -29,12 +32,14 @@ public class Ide {
     }
 
     public void open(VirtualFile file, Project project) {
-        OpenFileDescriptor descriptor = new OpenFileDescriptor(project, file);
-        if (!descriptor.navigateInEditor(project, true)) {
-            //open in text editor. Holy shit Jetbrains. Your ***** API is sucks
+        FileTypeManager fileTypeManager = FileTypeManager.getInstance();
+        FileType fileType = fileTypeManager.getFileTypeByFile(file);
+
+        if (fileType instanceof UnknownFileType) {
             FileTypeManagerImpl.cacheFileType(file, PlainTextFileType.INSTANCE);
-            new OpenFileDescriptor(project, file).navigate(true);
         }
+
+        new OpenFileDescriptor(project, file).navigate(true);
     }
 
     public void openBrowser(String url) {
