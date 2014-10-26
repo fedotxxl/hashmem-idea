@@ -50,7 +50,6 @@ public class HmSettingsDialog {
             add(fieldPanel, BorderLayout.CENTER);
 
             sync = new JCheckBox();
-            sync.setSelected(model.isSyncEnabled());
             sync.addItemListener(new TrackedItemListener() {
                 @Override
                 public void doItemStateChanged(ItemEvent e) {
@@ -62,7 +61,7 @@ public class HmSettingsDialog {
             });
 
 
-            username = new JTextField(model.getUsername(), 16);
+            username = new JTextField(16);
             username.getDocument().addDocumentListener(new TrackedDocumentAdapter() {
                 @Override
                 protected void doTextChanged(DocumentEvent e) {
@@ -70,7 +69,7 @@ public class HmSettingsDialog {
                 }
             });
 
-            password = new JPasswordField(model.getPassword(), 16);
+            password = new JPasswordField(16);
             password.setFont(username.getFont());
             password.getDocument().addDocumentListener(new TrackedDocumentAdapter() {
                 @Override
@@ -151,6 +150,17 @@ public class HmSettingsDialog {
 
             add(buttonsAndMessage, BorderLayout.SOUTH);
 
+            setModel(model);
+            refreshAllFields();
+        }
+
+        private void setModel(HashMemSettings.Model model) {
+            sync.setSelected(model.isSyncEnabled());
+            username.setText(model.getUsername());
+            password.setText(model.getPassword());
+        }
+
+        private void refreshAllFields() {
             updateUsernameEnabled();
             updatePasswordEnabled();
             updateCheckCredentialsEnabled();
@@ -233,6 +243,12 @@ public class HmSettingsDialog {
             return new HashMemSettings.Model(isSyncEnabled(), getUsername(), getPassword());
         }
 
+        public void setModelAndResetAppliedAction(HashMemSettings.Model model) {
+            action = null;
+            setModel(model);
+            refreshAllFields();
+        }
+
         public HashMemSettings.Action getAppliedAction() {
             return action;
         }
@@ -250,6 +266,10 @@ public class HmSettingsDialog {
 
     public HashMemSettings.Model getModel() {
         return form.getModel();
+    }
+
+    public void setModelAndResetAppliedAction(HashMemSettings.Model model) {
+        form.setModelAndResetAppliedAction(model);
     }
 
     public HashMemSettings.Action getAppliedAction() {

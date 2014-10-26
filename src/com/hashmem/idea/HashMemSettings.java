@@ -55,7 +55,11 @@ public class HashMemSettings implements Configurable {
 
     @Override
     public boolean isModified() {
-        return form != null;
+        return form != null && (form.getAppliedAction() != null || isModelChanged());
+    }
+
+    private boolean isModelChanged() {
+        return !model.equals(form.getModel());
     }
 
     @Override
@@ -77,7 +81,9 @@ public class HashMemSettings implements Configurable {
     }
 
     @Override
-    public void reset() {}
+    public void reset() {
+        form.setModelAndResetAppliedAction(model);
+    }
 
     @Override
     public void disposeUIResources() {
