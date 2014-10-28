@@ -54,6 +54,8 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.PlainDocument;
@@ -163,6 +165,13 @@ public class HmPopup {
             myList.setFocusable(false);
             myList.setSelectedIndex(5);
             myList.updateUI();
+
+            myList.addListSelectionListener(new ListSelectionListener() {
+                @Override
+                public void valueChanged(ListSelectionEvent e) {
+                    markAsValid();
+                }
+            });
         }
 
         myDropdownPopup.setSize(preferredBounds.getSize());
@@ -364,10 +373,9 @@ public class HmPopup {
 
                 if (isSkipQueryChangeEvent) return;
 
-                String key = getQuery().getKey();
+                Query query = getQuery();
 
-                if (notesService.isValidKey(key) || StringUtils.isEmpty(key)) {
-                    markAsInvalid();
+                if (query.isEmptyKey() || query.isValid()) {
                     rebuildList(false); //todo add throttling
                 } else {
                     markAsInvalid();
@@ -418,7 +426,8 @@ public class HmPopup {
         }
 
         //todo improve algorithm
-        if (query.getType() == Query.Type.OPEN && myListModel.size() == 0) {
+        Query.Type queryType = query.getType();
+        if (myListModel.size() == 0 && !query.isEmptyKey() && (queryType == Query.Type.OPEN || queryType == Query.Type.DELETE || queryType == Query.Type.COMMAND)) {
             markAsInvalid();
         } else {
             markAsValid();

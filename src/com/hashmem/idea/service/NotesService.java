@@ -4,21 +4,17 @@
  */
 package com.hashmem.idea.service;
 
-import com.hashmem.idea.domain.SyncNote;
 import com.hashmem.idea.domain.Note;
+import com.hashmem.idea.domain.SyncNote;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.Function;
-import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import static com.intellij.util.containers.ContainerUtil.map;
 
 public class NotesService {
-
-    private static final Pattern VALIDATE_KEY = Pattern.compile("^[0-9a-zA-Z][0-9a-zA-Z\\.\\-_]*$");
 
     private FileSystem fileSystem;
 
@@ -67,10 +63,6 @@ public class NotesService {
 
     public String getKey(VirtualFile file) {
         return fileSystem.getNoteKey(file);
-    }
-
-    public boolean isValidKey(String key) {
-        return !StringUtils.isEmpty(key) && VALIDATE_KEY.matcher(key).matches();
     }
 
     //=========== SETTERS ============

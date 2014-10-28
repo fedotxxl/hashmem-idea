@@ -13,6 +13,7 @@ import com.hashmem.idea.ui.Ide;
 import com.hashmem.idea.domain.Query;
 import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
+import org.apache.commons.lang.StringUtils;
 
 public class ActionProcessor {
 
@@ -24,17 +25,18 @@ public class ActionProcessor {
     private Router router;
 
     public boolean processAction(Query query, Project project) {
-        Query.Type type = query.getType();
-        String key = query.getKey();
-
-        if (!notesService.isValidKey(key)) {
+        if (!query.isValid()) {
             return false;
         }
+
+        Query.Type type = query.getType();
+        String key = query.getKey();
+        String content = query.getContent();
 
         if (type == Query.Type.OPEN) {
             return open(key, project);
         } else if (type == Query.Type.CREATE) {
-            return create(key, project);
+            return createOrChange(key, content, project);
         } else if (type == Query.Type.DELETE) {
             return delete(key);
         } else if (type == Query.Type.OPEN_SITE) {
@@ -71,9 +73,13 @@ public class ActionProcessor {
         return true;
     }
 
-    private boolean create(String key, Project project) {
-        if (!notesService.has(key)) {
-            if (!fileSystem.createNoteFile(key, "")) {
+    private boolean createOrChange(String key, String content, Project project) {
+        content = (content == null) ? "" : content;
+
+        if (notesService.has(key)) {
+            if (!StringUtils.isEmpty(content)) fileSystem.setNoteContent(key, content);
+        } else {
+            if (!fileSystem.createNoteFile(key, content)) {
                 ide.getLog().canNotCreateFile(key);
                 return false;
             }

@@ -96,6 +96,10 @@ public class FileSystem implements BulkFileListener {
         return createFile(key, text, notesFolderPath);
     }
 
+    public boolean setNoteContent(String key, final String text) {
+        return setContent(key, text, notesFolderPath);
+    }
+
     private boolean createFile(final String fileName, final String text, final String path) {
         return ApplicationManager.getApplication().runReadAction(new Computable<Boolean>() {
 
@@ -124,6 +128,34 @@ public class FileSystem implements BulkFileListener {
             }
         });
 	}
+
+    private boolean setContent(final String fileName, final String text, final String path) {
+        return ApplicationManager.getApplication().runReadAction(new Computable<Boolean>() {
+
+            @Override
+            public Boolean compute() {
+                return ApplicationManager.getApplication().runWriteAction(new Computable<Boolean>() {
+                    @Override
+                    public Boolean compute() {
+                        try {
+                            ensureExists(new File(path));
+
+                            VirtualFile noteFile = virtualFileBy(path + "/" + fileName, true);
+                            if (noteFile == null) return false;
+
+                            noteFile.setBinaryContent(text.getBytes(CHARSET));
+
+                            return true;
+                        } catch (IOException e) {
+                            LOG.warn(e);
+                            ExceptionTracker.getInstance().trackAndRethrow(e);
+                            return false;
+                        }
+                    }
+                });
+            }
+        });
+    }
 
 	public boolean removeNote(String key) {
 	    return removeFile(getNoteFilePath(key));

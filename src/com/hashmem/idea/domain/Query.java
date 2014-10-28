@@ -4,13 +4,16 @@
  */
 package com.hashmem.idea.domain;
 
+import org.apache.commons.lang.StringUtils;
+
 public class Query {
     private String prefix;
     private String key;
+    private String content = null;
     private Type type = null;
 
     public Query(String query) {
-        if (query == null || query.trim().isEmpty()) {
+        if (StringUtils.isEmpty(query)) {
             prefix = "";
             key = "";
         } else {
@@ -19,9 +22,16 @@ public class Query {
 
             if (first == '+' || first == '-' || first == '/' || first == ':') {
                 prefix = String.valueOf(first);
-                key = query.substring(1);
+                query = query.substring(1);
             } else {
                 prefix = "";
+            }
+
+            int contentDelimiter = query.indexOf(" ");
+            if (contentDelimiter > 0) {
+                key = query.substring(0, contentDelimiter);
+                content = query.substring(contentDelimiter + 1);
+            } else {
                 key = query;
             }
         }
@@ -33,11 +43,11 @@ public class Query {
     }
 
     public boolean isEmpty() {
-        return prefix.isEmpty() && key.isEmpty();
+        return StringUtils.isEmpty(prefix) && StringUtils.isEmpty(key);
     }
 
     public boolean isEmptyKey() {
-        return key.isEmpty();
+        return StringUtils.isEmpty(key);
     }
 
     public String getPrefix() {
@@ -48,8 +58,30 @@ public class Query {
         return key;
     }
 
+    public String getContent() {
+        return content;
+    }
+
     public boolean isCommandPrefix() {
         return getType() == Type.COMMAND;
+    }
+
+    public boolean isValid() {
+        Type type = getType();
+        boolean isValidKey = NoteKey.isValid(key);
+        boolean isEmptyContent = (content == null);
+
+        if (type == Type.CREATE) {
+            return isValidKey;
+        } else if (type == Type.OPEN || type == Type.DELETE) {
+            return isValidKey && isEmptyContent;
+        } else if (type == Type.OPEN_SITE) {
+            return (isEmptyKey() || isValidKey) && isEmptyContent;
+        } else if (type == Type.COMMAND) {
+            return isEmptyContent;
+        } else {
+            return false;
+        }
     }
 
     public Type getType() {
