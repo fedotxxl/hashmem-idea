@@ -8,6 +8,7 @@ package com.hashmem.idea;
 import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.event.SettingsChangeEvent;
 import com.hashmem.idea.event.SettingsChangedEvent;
+import com.hashmem.idea.i18n.MessageBundle;
 import com.hashmem.idea.remote.AuthService;
 import com.hashmem.idea.service.AccountService;
 import com.hashmem.idea.ui.HmSettingsDialog;
@@ -35,7 +36,7 @@ public class HashMemSettings implements Configurable {
     @Nls
     @Override
     public String getDisplayName() {
-        return "hashMem.com";
+        return MessageBundle.message("settings.title");
     }
 
     @Nullable

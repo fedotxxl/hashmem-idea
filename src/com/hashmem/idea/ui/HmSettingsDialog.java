@@ -5,10 +5,12 @@
 package com.hashmem.idea.ui;
 
 import com.hashmem.idea.HashMemSettings;
+import com.hashmem.idea.i18n.MessageBundle;
 import com.hashmem.idea.remote.AuthService;
 import com.hashmem.idea.tracked.TrackedActionListener;
 import com.hashmem.idea.tracked.TrackedDocumentAdapter;
 import com.hashmem.idea.tracked.TrackedItemListener;
+import com.intellij.CommonBundle;
 import com.intellij.ui.JBColor;
 import org.apache.commons.lang.StringUtils;
 
@@ -79,9 +81,9 @@ public class HmSettingsDialog {
                 }
             });
 
-            JLabel usernameLabel = new JLabel("username", JLabel.RIGHT);
-            JLabel syncLabel = new JLabel("Sync notes", JLabel.RIGHT);
-            JLabel passwordLabel = new JLabel("password", JLabel.RIGHT);
+            JLabel syncLabel = new JLabel(MessageBundle.message("settings.sync"), JLabel.RIGHT);
+            JLabel usernameLabel = new JLabel(MessageBundle.message("settings.user"), JLabel.RIGHT);
+            JLabel passwordLabel = new JLabel(MessageBundle.message("settings.password"), JLabel.RIGHT);
 
             syncLabel.setLabelFor(sync);
             usernameLabel.setLabelFor(username);
@@ -95,35 +97,38 @@ public class HmSettingsDialog {
             labelPanel.add(passwordLabel);
 
             JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
-            checkCredentials = new JButton("Check credentials");
+            checkCredentials = new JButton(MessageBundle.message("settings.credentials.check"));
             checkCredentials.addActionListener(new TrackedActionListener() {
                 @Override
                 public void doActionPerformed(ActionEvent e) {
                     AuthService.Result result = authService.tryAuthenticate(getUsername(), getPassword());
                     if (result == AuthService.Result.SUCCESS) {
-                        displayInfoMessage("Successfully logged in");
+                        displayInfoMessage(MessageBundle.message("settings.credentials.success"));
                     } else if (result == AuthService.Result.NOT_AUTHENTICATED) {
-                        displayWarnMessage("Unable to authenticate. Is username/password correct?");
+                        displayWarnMessage(MessageBundle.message("settings.credentials.failure.credentials"));
                     } else if (result == AuthService.Result.IO_EXCEPTION) {
-                        displayWarnMessage("Unable to connect to hashMem.com.");
+                        displayWarnMessage(MessageBundle.message("settings.credentials.failure.connection"));
                     } else {
-                        displayWarnMessage("Unknown problem");
+                        displayWarnMessage(MessageBundle.message("settings.credentials.failure.unknown"));
                     }
                 }
             });
 
             buttons.add(checkCredentials);
 
-            changeUsername = new JButton("Change username");
+            changeUsername = new JButton(MessageBundle.message("settings.user.change"));
             changeUsername.addActionListener(new TrackedActionListener() {
                 @Override
                 public void doActionPerformed(ActionEvent e) {
-                    String[] options = { "Unlink", "Unlink and remove local notes", "Cancel" };
+                    String[] options = {
+                            MessageBundle.message("settings.user.change.unlink"),
+                            MessageBundle.message("settings.user.change.unlink_and_remove_local_notes"),
+                            CommonBundle.message("button.cancel")
+                    };
                     JPanel panel = new JPanel();
-                    panel.add(new JLabel("<html>If you will change username your local notes will be synced with new account.<br>" +
-                            "To prevent it click 'Unlink and remove local notes'</html>"), BorderLayout.CENTER);
+                    panel.add(new JLabel(MessageBundle.message("settings.user.change.notification")), BorderLayout.CENTER);
                     int selected = JOptionPane.showOptionDialog(
-                            _this, panel,"Confirmation", JOptionPane.YES_NO_CANCEL_OPTION,
+                            _this, panel, MessageBundle.message("settings.user.change.notification.title"), JOptionPane.YES_NO_CANCEL_OPTION,
                             JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
 
                     if (selected == 0) {

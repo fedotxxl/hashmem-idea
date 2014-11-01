@@ -19,7 +19,7 @@ public class Router {
             @Override
             public UrlBuilder construct(UrlBuilder builder) {
                 return builder
-                        .addParameter("applicationId", settingsService.getApplicationId())
+                        .addParameter("applicationId", SettingsService.APPLICATION_ID)
                         .addParameter("token", token);
             }
         }).toString();
@@ -38,7 +38,7 @@ public class Router {
             @Override
             public UrlBuilder construct(UrlBuilder builder) {
                 return builder
-                        .addParameter("applicationId", settingsService.getApplicationId())
+                        .addParameter("applicationId", SettingsService.APPLICATION_ID)
                         .addParameter("username", username)
                         .addParameter("password", password);
             }

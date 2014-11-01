@@ -4,6 +4,7 @@
  */
 package com.hashmem.idea;
 
+import com.hashmem.idea.i18n.MessageBundle;
 import com.hashmem.idea.utils.ExceptionTracker;
 import com.intellij.openapi.diagnostic.ErrorReportSubmitter;
 import com.intellij.openapi.diagnostic.IdeaLoggingEvent;
@@ -15,7 +16,7 @@ import java.awt.*;
 public class HashMemErrorReportSubmitter extends ErrorReportSubmitter {
     @Override
     public String getReportActionText() {
-        return "Report to hashMem.com plugin author (Thanks for your Help to improve the Plugin!)";
+        return MessageBundle.message("exception.report_to_plugin_author");
     }
 
     @Override
