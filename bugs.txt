@@ -1,0 +1,1 @@
+1. Exception: updating currently opened note by popup

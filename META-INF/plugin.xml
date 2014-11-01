@@ -40,7 +40,7 @@
 
   <actions>
       <action id="HmDialog" class="com.hashmem.idea.ui.HmAction" text="Open hashMem.com dialog">
-          <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift m"/>
+          <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift p"/>
       </action>
   </actions>
 

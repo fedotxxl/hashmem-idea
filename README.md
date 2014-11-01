@@ -34,3 +34,4 @@ TODO
 
 *remove reset
 *compatible with old products - http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges
+*plugin's description
