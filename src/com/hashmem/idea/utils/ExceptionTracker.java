@@ -7,6 +7,7 @@ package com.hashmem.idea.utils;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
+import com.hashmem.idea.HashMemBundle;
 import com.hashmem.idea.remote.HttpService;
 import com.hashmem.idea.service.SettingsService;
 import com.intellij.openapi.application.Application;
@@ -51,7 +52,7 @@ public class ExceptionTracker {
     }
 
     private void doTrack(Throwable e) throws IOException {
-        HttpService.getInstance().post("http://hashmem.com/support/exception", new TrackedException(e).toJson());
+        HttpService.getInstance().post(HashMemBundle.message("server.exception_tracker"), new TrackedException(e).toJson());
     }
 
     private static class TrackedException {
