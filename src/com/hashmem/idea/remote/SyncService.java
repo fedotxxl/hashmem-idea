@@ -12,6 +12,7 @@ import com.hashmem.idea.domain.SyncNote;
 import com.hashmem.idea.domain.SyncResponse;
 import com.hashmem.idea.event.NoteFileChangedEvent;
 import com.hashmem.idea.event.NoteFileDeletedEvent;
+import com.hashmem.idea.event.SettingsChangedEvent;
 import com.hashmem.idea.service.NotesService;
 import com.hashmem.idea.service.Router;
 import com.hashmem.idea.service.SettingsService;
@@ -52,7 +53,7 @@ public class SyncService {
     private Debouncer<Object> syncOnChangeDebouncer = new Debouncer<Object>(5000, new Callback<Object>() {
         @Override
         public void call(Object arg) {
-            doSync(false);
+            doSync(false, false);
         }
     });
 
@@ -69,7 +70,7 @@ public class SyncService {
         }
     };
 
-    private synchronized void doSync(boolean isForceSync) {
+    private synchronized void doSync(boolean isAllNotes, boolean isForceSync) {
         if (syncing || !settingsService.isSyncEnabled()) {
 
             if (isForceSync) {
@@ -79,7 +80,7 @@ public class SyncService {
             return;
         }
 
-        final long since = (isForceSync) ? 0l : lastSync;
+        final long since = (isAllNotes) ? 0l : lastSync;
 
         try {
             syncing = true;
@@ -103,11 +104,11 @@ public class SyncService {
         }
     }
 
-    public void syncAllNow() {
+    public void syncAllNow(final boolean isForceSync) {
         syncBackground(new TrackedRunnable() {
             @Override
             public void doRun() {
-                doSync(true);
+                doSync(true, isForceSync);
             }
         });
     }
@@ -296,6 +297,11 @@ public class SyncService {
                 syncOnChange();
             }
         });
+    }
+
+    @Subscribe
+    public void onSettingsChanged(final SettingsChangedEvent e) {
+        syncAllNow(false);
     }
 
     private static class UnknownSyncException extends Exception {

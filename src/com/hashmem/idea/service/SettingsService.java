@@ -7,7 +7,6 @@ package com.hashmem.idea.service;
 import com.google.common.eventbus.Subscribe;
 import com.hashmem.idea.HashMemSettings;
 import com.hashmem.idea.event.SettingsChangeEvent;
-import org.apache.commons.lang.StringUtils;
 
 public class SettingsService {
 
@@ -38,7 +37,7 @@ public class SettingsService {
     }
 
     public boolean isSyncEnabled() {
-        return !StringUtils.isEmpty(getUsername());
+        return model.isSyncEnabled();
     }
 
     @Subscribe

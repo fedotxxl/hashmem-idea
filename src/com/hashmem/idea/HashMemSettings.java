@@ -7,6 +7,7 @@ package com.hashmem.idea;
 
 import com.google.common.eventbus.EventBus;
 import com.hashmem.idea.event.SettingsChangeEvent;
+import com.hashmem.idea.event.SettingsChangedEvent;
 import com.hashmem.idea.remote.AuthService;
 import com.hashmem.idea.service.AccountService;
 import com.hashmem.idea.ui.HmSettingsDialog;
@@ -77,6 +78,7 @@ public class HashMemSettings implements Configurable {
             model = formModel;
             persistModel();
             eventBus.post(new SettingsChangeEvent(model));
+            eventBus.post(new SettingsChangedEvent());
         }
     }
 
