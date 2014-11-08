@@ -5,16 +5,42 @@
   <vendor email="support@hashmem.com" url="https://hashMem.com">hashMem.com</vendor>
 
   <description><![CDATA[
-      Use Intellij style to store your data!<br>
-      Sync your notes with hashMem.com
-    ]]></description>
+      Do you like <b>Ctrl+Shift+N</b> dialog? Do you want manage your <b>bookmarks</b>/<b>notes</b> similar way?
+      Then this plugin was made for you!
+       <br><br>
+       It's very easy to create/read bookmark or note - open dialog (<b>Ctrl+Shift+P</b>) and execute command:
+       <ul>
+        <li>note.key - opens note with key note.key</li>
+        <li>+note.key [note content] - creates / updates note (content is optional)</li>
+        <li>-note.key - deletes note</li>
+       </ul>
+
+       <br><br>
+       To open notes faster you can type only part of note's key (it works just as Ctrl+Shift+N dialog).
+       <br><br>
+       Few more cool features:
+       <br>
+
+       <ul>
+        <li>★ Free cloud syncing - <a href="http://hashmem.com">http://hashmem.com</a></li>
+        <li>★ Plugin for browser which uses same idea and approach to manage bookmarks
+           (<a href="https://chrome.google.com/webstore/detail/hashmemcom-%D0%B7%D0%B0%D0%BA%D0%BB%D0%B0%D0%B4%D0%BA%D0%B8-%D0%B7%D0%B0%D0%BC%D0%B5%D1%82/nmkgaalbomjiafnenbknaoeilejnhnce/details?utm_source=chrome-ntp-icon">Chrome</a>)
+        </li>
+       </ul>
+
+       Note: it's only in Russian yet but you can still use it to sync you notes
+       <br>
+       <br>
+       To report a bug or suggest an idea pls contact us by mail (support@hashmem.com) or via <a href="https://github.com/fedotxxl/hashmem-idea/issues">GitHub page</a>
+    ]]>
+  </description>
 
   <change-notes><![CDATA[
     ]]>
   </change-notes>
 
   <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
-  <idea-version since-build="131"/>
+  <idea-version since-build="133"/>
 
   <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
        on how to target different products -->
