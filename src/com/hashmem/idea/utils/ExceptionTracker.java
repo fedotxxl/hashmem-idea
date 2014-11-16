@@ -47,7 +47,7 @@ public class ExceptionTracker {
         try {
             doTrack(t);
         } catch (Throwable e) {
-            log.error("Exception on tracking " + t.getMessage() + " exception", e); // =(
+            log.error("Exception on tracking exception: " + e.getMessage(), t); // =(
         }
     }
 

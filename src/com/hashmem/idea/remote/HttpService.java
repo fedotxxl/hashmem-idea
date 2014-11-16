@@ -6,7 +6,6 @@ package com.hashmem.idea.remote;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
-import com.google.common.io.Closeables;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpMethod;
 import org.apache.commons.httpclient.methods.GetMethod;
@@ -61,7 +60,7 @@ public class HttpService {
             InputStream stream = method.getResponseBodyAsStream();
             String responseBody = CharStreams.toString(new InputStreamReader(stream, Charsets.UTF_8));
 
-            Closeables.closeQuietly(stream);
+            stream.close();
 
             return new HttpResponse(responseStatusCode, responseBody);
         } finally {

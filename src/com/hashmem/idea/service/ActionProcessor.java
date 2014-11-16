@@ -11,6 +11,7 @@ import com.hashmem.idea.remote.SyncService;
 import com.hashmem.idea.ui.HmLog;
 import com.hashmem.idea.ui.Ide;
 import com.hashmem.idea.domain.Query;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.project.Project;
 import org.apache.commons.lang.StringUtils;
@@ -112,7 +113,7 @@ public class ActionProcessor {
             ide.openBrowser(router.getFeedback());
             return true;
         } else if (command == Command.SETTINGS) {
-            ShowSettingsUtil.getInstance().showSettingsDialog(project, HashMemSettings.class);
+            ShowSettingsUtil.getInstance().showSettingsDialog(project, ApplicationManager.getApplication().getComponent(HashMemSettings.class));
             return true;
         } else if (command == Command.SYNC) {
             syncService.syncAllNow(true);

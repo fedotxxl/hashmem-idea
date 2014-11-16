@@ -44,8 +44,8 @@ public class FileSystem implements BulkFileListener {
 	private static final Charset CHARSET = Charset.forName("UTF8");
 	private static final String HASHMEM_FOLDER = "";
 	private static final String SYNC_FILE = ".sync";
+    private static final String NOTES_FOLDER_PATH = PathManager.getPluginsPath() + "/hm/";
 
-    private final String notesFolderPath;
     private final VirtualFileManager fileManager = VirtualFileManager.getInstance();
 	private final Condition<VirtualFile> canBeNote = new Condition<VirtualFile>() {
 		@Override public boolean value(VirtualFile it) {
@@ -53,10 +53,6 @@ public class FileSystem implements BulkFileListener {
 		}
 	};
     private OneTimeContainer<String> notesToSkipChangeOrDeletedEvents = new OneTimeContainer<String>();
-
-    public FileSystem() {
-        notesFolderPath = PathManager.getPluginsPath() + "/hm/";
-    }
 
     private VirtualFile getRootFolder() {
         return virtualFileBy(HASHMEM_FOLDER);
@@ -80,11 +76,11 @@ public class FileSystem implements BulkFileListener {
 	}
 
     public boolean createNoteFile(String key, final String text) {
-        return createFile(key, text, notesFolderPath);
+        return createFile(key, text, NOTES_FOLDER_PATH);
     }
 
     public boolean setNoteContent(String key, final String text) {
-        return setContent(key, text, notesFolderPath);
+        return setContent(key, text, NOTES_FOLDER_PATH);
     }
 
     private boolean createFile(final String fileName, final String text, final String path) {
@@ -187,7 +183,7 @@ public class FileSystem implements BulkFileListener {
     }
 
     private String getFilePath(String fileName) {
-        return notesFolderPath + fileName;
+        return NOTES_FOLDER_PATH + fileName;
     }
 
 	public boolean isNote(final VirtualFile virtualFile) {
@@ -269,7 +265,7 @@ public class FileSystem implements BulkFileListener {
     }
 
     private VirtualFile createSupportFile(String fileName, String content) {
-        boolean created = createFile(fileName, content, notesFolderPath);
+        boolean created = createFile(fileName, content, NOTES_FOLDER_PATH);
 
         if (!created) {
             throw new IllegalStateException(MessageBundle.message("exception.file.can_not_create", fileName, content));
