@@ -8,7 +8,7 @@
       Do you like <b>Ctrl+Shift+N</b> dialog? Do you want manage your <b>bookmarks</b>/<b>notes</b> similar way?
       Then this plugin was made for you!
        <br><br>
-       It's very easy to create/read bookmark or note - open dialog (<b>Ctrl+Shift+P</b>) and execute command:
+       It's very easy to create/read bookmark or note - open dialog (<b>Ctrl+Shift+~</b>) and execute command:
        <ul>
         <li>note.key - opens note with key note.key</li>
         <li>+note.key [note content] - creates / updates note (content is optional)</li>
@@ -67,7 +67,7 @@
 
   <actions>
       <action id="HmDialog" class="com.hashmem.idea.ui.HmAction" text="Open hashMem.com dialog">
-          <keyboard-shortcut keymap="$default" first-keystroke="ctrl shift p"/>
+          <keyboard-shortcut keymap="$default" first-keystroke="control shift BACK_QUOTE"/>
       </action>
   </actions>
 

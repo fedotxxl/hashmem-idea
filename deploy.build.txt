@@ -1,0 +1,2 @@
+1. Update hashMem.properties file content from hashMem.prod.properties
+2. For 136 (Idea 14 / WebStorm 9) build app from 139-IDEA-14 branch
