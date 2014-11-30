@@ -27,7 +27,6 @@ import com.intellij.openapi.ui.popup.ComponentPopupBuilder;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Computable;
-import com.intellij.openapi.util.SystemInfo;
 import com.intellij.openapi.wm.WindowManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -70,6 +69,7 @@ public class HmPopup {
 
     private static int VISIBLE_LIST_SIZE_LIMIT = 6;
     private static int LIST_SIZE_LIMIT = VISIBLE_LIST_SIZE_LIMIT;
+    private static int FILTER_FIELD_SIZE = 40;
 
     protected JBPopup myDropdownPopup;
     protected JScrollPane myListScrollPane;
@@ -86,7 +86,7 @@ public class HmPopup {
     private boolean isSkipQueryChangeEvent = false;
 
     //    protected final JPanelProvider myTextFieldPanel = new JPanelProvider();// Located in the layered pane
-    protected final MyTextField myTextField = new MyTextField();
+    protected final MyTextField myTextField;
 
 
     public HmPopup(Project myProject, NotesService notesService, ActionProcessor actionProcessor) {
@@ -95,6 +95,9 @@ public class HmPopup {
         this.notesService = notesService;
         this.actionProcessor = actionProcessor;
         myList.setCellRenderer(listCellRenderer);
+
+        myTextField = new MyTextField();
+        myTextField.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
     }
 
     void show() {
@@ -120,7 +123,8 @@ public class HmPopup {
         myList.setVisibleRowCount(Math.min(VISIBLE_LIST_SIZE_LIMIT, myList.getModel().getSize()));
 
         Rectangle bounds = new Rectangle(myTextFieldPanel.getLocationOnScreen(), myTextField.getSize());
-        bounds.y += myTextFieldPanel.getHeight() + (SystemInfo.isMac ? 3 : 1);
+        bounds.x += -2;
+        bounds.y += myTextFieldPanel.getHeight() + 1;
 
         final Dimension preferredScrollPaneSize = myListScrollPane.getPreferredSize();
         if (myList.getModel().getSize() == 0) {
@@ -569,7 +573,7 @@ public class HmPopup {
         private boolean completionKeyStrokeHappened = false;
 
         private MyTextField() {
-            super(40);
+            super(FILTER_FIELD_SIZE);
             enableEvents(AWTEvent.KEY_EVENT_MASK);
             myCompletionKeyStroke = getShortcut(IdeActions.ACTION_CODE_COMPLETION);
             forwardStroke = getShortcut(IdeActions.ACTION_GOTO_FORWARD);
