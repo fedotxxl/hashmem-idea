@@ -20,6 +20,8 @@ import com.intellij.ide.util.gotoByName.MatchResult;
 import com.intellij.ide.util.gotoByName.ModelDiff;
 import com.intellij.openapi.MnemonicHelper;
 import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.editor.colors.EditorColorsManager;
+import com.intellij.openapi.editor.colors.EditorColorsScheme;
 import com.intellij.openapi.keymap.Keymap;
 import com.intellij.openapi.keymap.KeymapManager;
 import com.intellij.openapi.project.Project;
@@ -96,8 +98,10 @@ public class HmPopup {
         this.actionProcessor = actionProcessor;
         myList.setCellRenderer(listCellRenderer);
 
+        EditorColorsScheme scheme = EditorColorsManager.getInstance().getGlobalScheme();
+
         myTextField = new MyTextField();
-        myTextField.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
+        myTextField.setFont(new Font(scheme.getEditorFontName(), Font.PLAIN, 14));
     }
 
     void show() {
