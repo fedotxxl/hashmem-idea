@@ -227,7 +227,7 @@ public class FileSystem implements BulkFileListener {
     public void after(@NotNull List<? extends VFileEvent> events) {
         for (VFileEvent e : events) {
             VirtualFile file = e.getFile();
-            if (isNote(file) && isChangeEvent(e)) {
+            if (file != null && isNote(file) && isChangeEvent(e)) {
                 String key = getNoteKey(file);
 
                 if (!notesToSkipChangeOrDeletedEvents.checkContainsAndRemove(key)) {
