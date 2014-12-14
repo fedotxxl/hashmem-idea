@@ -5,10 +5,19 @@
     <vendor email="support@hashmem.com" url="https://hashMem.com">hashMem.com</vendor>
 
     <description><![CDATA[
-      Do you like <b>(Ctrl/⌘)+Shift+N</b> dialog? Do you want manage your <b>bookmarks</b>/<b>notes</b> similar way?
-      In this case this plugin was made for you!
+      Do you like <b>[Ctrl/⌘]+Shift+N</b> dialog? Isn't it really fast way to open files?<br>
+      Do you want to open <b>bookmarks</b>/<b>notes</b> similar way right from your IDE?<br>
+      In this case this we made this plugin specially for you!
        <br><br>
-       It's very easy to create/read bookmark or note - open dialog (<b>(Ctrl/⌘)+Shift+~</b>) and execute command:
+
+      --------------------------------------------<br>
+      This plugin provides you an ability to CRUD your bookmarks/notes from IDE and open them very fast using similar to <b>[Ctrl/⌘]+Shift+N</b> dialog approach.
+      + you can synchronize your data with cloud and access it directly from your favorite browser by using appropriate plugin.<br>
+      --------------------------------------------
+       <br><br>
+
+
+       It's very easy to create/read bookmark or note - open dialog <b>[Ctrl/⌘]+Shift+~</b> and execute command:
        <ul>
         <li>note.key - opens note with key note.key</li>
         <li>+note.key [note_content] - creates / updates note</li>
@@ -17,7 +26,7 @@
        </ul>
 
        <br><br>
-       To open notes faster you can type only part of note key (it works just as (Ctrl/⌘)+Shift+N dialog).
+       To open notes faster you can type only part of the key (it works just as [Ctrl/⌘]+Shift+N dialog).
        <br><br>
        Few more cool features:
        <br>
@@ -36,7 +45,7 @@
 
        <br>
        <br>
-       To report a bug or suggest an idea pls contact us by mail (support@hashmem.com) or via <a href="https://github.com/fedotxxl/hashmem-idea/issues">GitHub page</a>
+       To report a bug or suggest an idea please contact us by mail (support@hashmem.com) or via <a href="https://github.com/fedotxxl/hashmem-idea/issues">GitHub page</a>
     ]]>
     </description>
 
