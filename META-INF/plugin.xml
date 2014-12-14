@@ -17,7 +17,7 @@
        <br><br>
 
 
-       It's very easy to create/read bookmark or note - open dialog (<b>(Ctrl/⌘)+Shift+~</b>) and execute command:
+       It's very easy to create/read bookmark or note - open dialog <b>[Ctrl/⌘]+Shift+~</b> and execute command:
        <ul>
         <li>note.key - opens note with key note.key</li>
         <li>+note.key [note_content] - creates / updates note</li>
@@ -26,7 +26,7 @@
        </ul>
 
        <br><br>
-       To open notes faster you can type only part of the key (it works just as (Ctrl/⌘)+Shift+N dialog).
+       To open notes faster you can type only part of the key (it works just as [Ctrl/⌘]+Shift+N dialog).
        <br><br>
        Few more cool features:
        <br>
