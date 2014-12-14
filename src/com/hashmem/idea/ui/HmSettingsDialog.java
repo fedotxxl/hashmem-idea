@@ -24,6 +24,7 @@ import java.util.Date;
 
 public class HmSettingsDialog {
 
+    private static final int INPUT_FIELD_COLUMNS = 24;
     private HmSettingsForm form;
     private JFrame f;
 
@@ -63,7 +64,7 @@ public class HmSettingsDialog {
             });
 
 
-            username = new JTextField(16);
+            username = new JTextField(INPUT_FIELD_COLUMNS);
             username.getDocument().addDocumentListener(new TrackedDocumentAdapter() {
                 @Override
                 protected void doTextChanged(DocumentEvent e) {
@@ -71,7 +72,7 @@ public class HmSettingsDialog {
                 }
             });
 
-            password = new JPasswordField(16);
+            password = new JPasswordField(INPUT_FIELD_COLUMNS);
             password.setFont(username.getFont());
             password.getDocument().addDocumentListener(new TrackedDocumentAdapter() {
                 @Override
