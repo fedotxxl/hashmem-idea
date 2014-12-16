@@ -1,8 +1,8 @@
-<idea-plugin version="2">
+<idea-plugin version="2" url="https://hashmem.com/docs/plugin/jetbrains">
     <id>com.hashmem.idea</id>
     <name>hashMem.com</name>
     <version>1.0</version>
-    <vendor email="support@hashmem.com" url="https://hashMem.com">hashMem.com</vendor>
+    <vendor email="support@hashmem.com" url="https://hashMem.com" logo="icons/logo16.png">hashMem.com</vendor>
 
     <description><![CDATA[
       Do you like <b>[Ctrl/⌘]+Shift+N</b> pop-up window? Isn't it really fast way to open files?<br>
