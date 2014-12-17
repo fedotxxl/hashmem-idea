@@ -1,7 +1,7 @@
 <idea-plugin version="2" url="https://hashmem.com/docs/plugin/jetbrains">
     <id>com.hashmem.idea</id>
     <name>hashMem.com</name>
-    <version>1.0</version>
+    <version>1.1.133</version>
     <vendor email="support@hashmem.com" url="https://hashMem.com" logo="icons/logo16.png">hashMem.com</vendor>
 
     <description><![CDATA[
@@ -54,7 +54,7 @@
     </change-notes>
 
     <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
-    <idea-version since-build="133"/>
+    <idea-version since-build="133" until-build="138"/>
 
     <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
          on how to target different products -->
