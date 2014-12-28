@@ -88,7 +88,7 @@ public class SyncService {
             long synced = System.currentTimeMillis();
             Collection<SyncNote> notesToServer = getNotesToSync(since);
             SyncResponse notesFromServer = pushNotes(since, notesToServer);
-            saveChangedNotes(notesFromServer, synced, notesToServer);
+            saveChangedNotes(notesFromServer, synced, notesToServer, isForceSync);
             lastSync = synced;
         } catch (NotAuthenticatedException nae) {
             log.failedToSyncIncorrectUsernameOrPassword();
@@ -139,7 +139,7 @@ public class SyncService {
         syncChangeService.forgetAll();
     }
 
-    private void saveChangedNotes(final SyncResponse syncResponse, final long synced, final Collection<SyncNote> notesToServer) {
+    private void saveChangedNotes(final SyncResponse syncResponse, final long synced, final Collection<SyncNote> notesToServer, final boolean isLogSync) {
         ApplicationManager.getApplication().invokeLater(new TrackedRunnable() {
             @Override
             public void doRun() {
@@ -151,7 +151,7 @@ public class SyncService {
                         syncChangeService.forget(filter(notesToServer, DELETED_ONLY_CONDITION));
 
                         if (syncResponse == null || syncResponse.isNothingToUpdate()) {
-                            log.syncResult(result, syncResponse);
+                            if (isLogSync) log.syncResult(result, syncResponse);
                         } else {
                             for (SyncNote note : syncResponse.getNotes()) {
                                 SyncChangeResult change = saveNoteFromServer(note, synced);
@@ -163,7 +163,7 @@ public class SyncService {
                                 result.increase(change);
                             }
 
-                            log.syncResult(result, syncResponse);
+                            if (isLogSync) log.syncResult(result, syncResponse);
                         }
 
                         return true;

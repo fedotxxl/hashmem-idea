@@ -73,16 +73,7 @@ public class HmLog {
     }
 
     public void syncResult(SyncService.SyncResult result, SyncResponse syncResponse) {
-
-
-        String message = MessageBundle.message("log.sync.success.sent") + result.getSentToServerCount();
-        if (result.hasCreated()) message += MessageBundle.message("log.sync.success.created") + result.getCreated();
-        if (result.hasUpdated()) message += MessageBundle.message("log.sync.success.updated") + result.getUpdated();
-        if (result.hasDeleted()) message += MessageBundle.message("log.sync.success.deleted") + result.getDeleted();
-
-        if (!result.hasCreated() && !result.hasUpdated() && !result.hasDeleted()) {
-            message += MessageBundle.message("log.sync.success.noting_updated");
-        }
+        String message = MessageBundle.message("log.sync.success.sent");
 
         if (syncResponse.hasErrors()) {
             message += MessageBundle.message("log.sync.success.has_errors");
