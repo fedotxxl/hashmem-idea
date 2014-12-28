@@ -5,6 +5,7 @@
 package com.hashmem.idea.ui;
 
 import com.hashmem.idea.service.FileSystem;
+import com.hashmem.idea.utils.IOUtils;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.fileTypes.FileType;
@@ -15,6 +16,7 @@ import com.intellij.openapi.fileTypes.impl.FileTypeManagerImpl;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 
+import java.io.IOException;
 import java.net.URL;
 
 public class Ide {
@@ -32,6 +34,7 @@ public class Ide {
     }
 
     public void open(VirtualFile file, Project project) {
+        int fileLength = getFileLength(file);
         FileTypeManager fileTypeManager = FileTypeManager.getInstance();
         FileType fileType = fileTypeManager.getFileTypeByFile(file);
 
@@ -39,7 +42,15 @@ public class Ide {
             FileTypeManagerImpl.cacheFileType(file, PlainTextFileType.INSTANCE);
         }
 
-        new OpenFileDescriptor(project, file).navigate(true);
+        new OpenFileDescriptor(project, file, (fileLength > 0) ? fileLength : 0).navigate(true);
+    }
+
+    private int getFileLength(VirtualFile file) {
+        try {
+            return IOUtils.toString(file.getInputStream()).length();
+        } catch (IOException e) {
+            return -1;
+        }
     }
 
     public void openBrowser(String url) {
