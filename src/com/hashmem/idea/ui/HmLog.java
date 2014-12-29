@@ -72,8 +72,15 @@ public class HmLog {
         warn(MessageBundle.message("log.sync.failure.exception"));
     }
 
-    public void syncResult(SyncService.SyncResult result, SyncResponse syncResponse) {
+    public void syncResult(SyncService.SyncResult result, SyncResponse syncResponse, boolean isForceSync) {
+        if (isDoNotLogSyncResult(result, syncResponse, isForceSync)) return;
+
         String message = MessageBundle.message("log.sync.success.sent");
+
+        if (!isForceSync) {
+            if (result.hasChanged()) message += MessageBundle.message("log.sync.success.client.changed") + " " + result.getChanged();
+            if (syncResponse.hasChanged()) message += MessageBundle.message("log.sync.success.server.changed") + " " + syncResponse.getChanged();
+        }
 
         if (syncResponse.hasErrors()) {
             message += MessageBundle.message("log.sync.success.has_errors");
@@ -87,6 +94,18 @@ public class HmLog {
             warn(message);
         } else {
             info(message);
+        }
+    }
+
+    private boolean isDoNotLogSyncResult(SyncService.SyncResult result, SyncResponse syncResponse, boolean isForceSync) {
+        if (isForceSync) {
+            return false;
+        } else if (result.hasChanged() || syncResponse.hasChanged()) {
+            return false;
+        } else if (syncResponse.hasErrors()) {
+            return false;
+        } else {
+            return true;
         }
     }
 

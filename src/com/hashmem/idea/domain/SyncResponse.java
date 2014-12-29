@@ -15,11 +15,17 @@ public class SyncResponse {
     List<SyncNote> notes;
     List<String> deletedNotes;
     Map<String, List<String>> errors;
+    SyncChangesOnServer syncChangesOnServer;
 
     public SyncResponse(List<SyncNote> notes, List<String> deletedNotes, Map<String, List<String>> errors) {
+        this(notes, deletedNotes, errors, new SyncChangesOnServer());
+    }
+
+    public SyncResponse(List<SyncNote> notes, List<String> deletedNotes, Map<String, List<String>> errors, SyncChangesOnServer syncChangesOnServer) {
         this.notes = notes;
         this.deletedNotes = deletedNotes;
         this.errors = errors;
+        this.syncChangesOnServer = syncChangesOnServer;
     }
 
     public List<SyncNote> getNotes() {
@@ -34,6 +40,10 @@ public class SyncResponse {
         return errors;
     }
 
+    public SyncChangesOnServer getSyncChangesOnServer() {
+        return syncChangesOnServer;
+    }
+
     public static SyncResponse fromJson(String json) {
         return new Gson().fromJson(json, SyncResponse.class);
     }
@@ -44,6 +54,14 @@ public class SyncResponse {
 
     public boolean hasErrors() {
         return errors != null && errors.keySet().size() > 0;
+    }
+
+    public int getChanged() {
+        return syncChangesOnServer.deleted.size() + syncChangesOnServer.updated.size();
+    }
+
+    public boolean hasChanged() {
+        return getChanged() > 0;
     }
 
     @Override

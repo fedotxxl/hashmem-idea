@@ -139,7 +139,7 @@ public class SyncService {
         syncChangeService.forgetAll();
     }
 
-    private void saveChangedNotes(final SyncResponse syncResponse, final long synced, final Collection<SyncNote> notesToServer, final boolean isLogSync) {
+    private void saveChangedNotes(final SyncResponse syncResponse, final long synced, final Collection<SyncNote> notesToServer, final boolean isForceSync) {
         ApplicationManager.getApplication().invokeLater(new TrackedRunnable() {
             @Override
             public void doRun() {
@@ -151,7 +151,7 @@ public class SyncService {
                         syncChangeService.forget(filter(notesToServer, DELETED_ONLY_CONDITION));
 
                         if (syncResponse == null || syncResponse.isNothingToUpdate()) {
-                            if (isLogSync) log.syncResult(result, syncResponse);
+                            log.syncResult(result, syncResponse, isForceSync);
                         } else {
                             for (SyncNote note : syncResponse.getNotes()) {
                                 SyncChangeResult change = saveNoteFromServer(note, synced);
@@ -163,7 +163,7 @@ public class SyncService {
                                 result.increase(change);
                             }
 
-                            if (isLogSync) log.syncResult(result, syncResponse);
+                            log.syncResult(result, syncResponse, isForceSync);
                         }
 
                         return true;
@@ -362,6 +362,10 @@ public class SyncService {
             return deleted;
         }
 
+        public int getChanged() {
+            return created + updated + deleted;
+        }
+
         public boolean hasCreated() {
             return created > 0;
         }
@@ -372,6 +376,10 @@ public class SyncService {
 
         public boolean hasDeleted() {
             return deleted > 0;
+        }
+
+        public boolean hasChanged() {
+            return getChanged() > 0;
         }
     }
 
