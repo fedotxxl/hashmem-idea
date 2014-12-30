@@ -72,16 +72,14 @@ public class HmLog {
         warn(MessageBundle.message("log.sync.failure.exception"));
     }
 
-    public void syncResult(SyncService.SyncResult result, SyncResponse syncResponse) {
+    public void syncResult(SyncService.SyncResult result, SyncResponse syncResponse, boolean isForceSync) {
+        if (isDoNotLogSyncResult(result, syncResponse, isForceSync)) return;
 
+        String message = MessageBundle.message("log.sync.success.sent");
 
-        String message = MessageBundle.message("log.sync.success.sent") + result.getSentToServerCount();
-        if (result.hasCreated()) message += MessageBundle.message("log.sync.success.created") + result.getCreated();
-        if (result.hasUpdated()) message += MessageBundle.message("log.sync.success.updated") + result.getUpdated();
-        if (result.hasDeleted()) message += MessageBundle.message("log.sync.success.deleted") + result.getDeleted();
-
-        if (!result.hasCreated() && !result.hasUpdated() && !result.hasDeleted()) {
-            message += MessageBundle.message("log.sync.success.noting_updated");
+        if (!isForceSync) {
+            if (result.hasChanged()) message += MessageBundle.message("log.sync.success.client.changed") + " " + result.getChanged();
+            if (syncResponse.hasChanged()) message += MessageBundle.message("log.sync.success.server.changed") + " " + syncResponse.getChanged();
         }
 
         if (syncResponse.hasErrors()) {
@@ -96,6 +94,18 @@ public class HmLog {
             warn(message);
         } else {
             info(message);
+        }
+    }
+
+    private boolean isDoNotLogSyncResult(SyncService.SyncResult result, SyncResponse syncResponse, boolean isForceSync) {
+        if (isForceSync) {
+            return false;
+        } else if (result.hasChanged() || syncResponse.hasChanged()) {
+            return false;
+        } else if (syncResponse.hasErrors()) {
+            return false;
+        } else {
+            return true;
         }
     }
 
